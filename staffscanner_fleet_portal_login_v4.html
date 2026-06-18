@@ -1,0 +1,2991 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staffscanner Fleet Management Portal - Login Permissions v4</title>
+  <style>
+    :root{
+      --blue:#0098e8;
+      --blue-dark:#006fd6;
+      --blue-soft:#d1edfd;
+      --text:#102033;
+      --muted:#667085;
+      --line:#e6eef5;
+      --bg:#f5f9fc;
+      --card:#ffffff;
+      --green:#14a44d;
+      --amber:#f59e0b;
+      --red:#dc2626;
+      --dark:#071827;
+      --shadow:0 20px 45px rgba(12,45,75,.10);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(0,152,232,.18), transparent 38%),
+        linear-gradient(180deg,#f7fbff,#eef6fb);
+      color:var(--text);
+    }
+
+    .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+    .app.locked{display:none}
+    .sidebar{
+      background:rgba(255,255,255,.82);
+      backdrop-filter: blur(18px);
+      border-right:1px solid var(--line);
+      padding:24px 18px;
+      position:sticky;top:0;height:100vh;
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px;margin-bottom:30px;padding:8px;
+    }
+    .brand-mark{
+      width:44px;height:44px;border-radius:15px;
+      background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+      display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px;
+      box-shadow:0 12px 25px rgba(0,152,232,.25);
+    }
+    .brand h1{font-size:18px;margin:0;line-height:1.15}
+    .brand span{font-size:12px;color:var(--muted)}
+    .nav{display:grid;gap:8px}
+    .nav button{
+      width:100%;border:0;background:transparent;text-align:left;
+      padding:13px 14px;border-radius:15px;color:#25364a;font-weight:700;
+      cursor:pointer;display:flex;align-items:center;gap:11px;font-size:14px;
+    }
+    .nav button.active,.nav button:hover{background:var(--blue-soft);color:#005c9c}
+    .side-card{
+      margin-top:30px;background:linear-gradient(145deg,#09243a,#0d4c76);
+      color:#fff;border-radius:22px;padding:18px;box-shadow:var(--shadow);
+    }
+    .side-card h3{margin:0 0 8px;font-size:15px}
+    .side-card p{margin:0;color:#dceeff;font-size:13px;line-height:1.45}
+    main{padding:28px;overflow:hidden}
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;
+    }
+    .topbar h2{margin:0;font-size:28px;letter-spacing:-.04em}
+    .topbar p{margin:6px 0 0;color:var(--muted)}
+    .user-chip{
+      display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+      border-radius:999px;padding:9px 14px;box-shadow:0 8px 18px rgba(12,45,75,.06);
+    }
+    .avatar{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:900}
+    .grid{display:grid;gap:18px}
+    .stats{grid-template-columns:repeat(4,minmax(160px,1fr));margin-bottom:20px}
+    .stat{
+      background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:var(--radius);
+      padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+    }
+    .stat:after{
+      content:"";position:absolute;right:-25px;top:-25px;width:90px;height:90px;border-radius:50%;
+      background:rgba(0,152,232,.10)
+    }
+    .stat .label{color:var(--muted);font-size:13px;font-weight:800}
+    .stat .value{font-size:34px;font-weight:900;margin-top:8px;letter-spacing:-.04em}
+    .content{grid-template-columns:1.3fr .7fr;align-items:start}
+    .panel{
+      background:rgba(255,255,255,.90);border:1px solid var(--line);border-radius:var(--radius);
+      padding:22px;box-shadow:var(--shadow);
+    }
+    .panel h3{margin:0 0 16px;font-size:19px;letter-spacing:-.02em}
+    .vehicle-list{display:grid;gap:15px}
+    .vehicle-card{
+      display:grid;grid-template-columns:110px 1fr auto;gap:16px;align-items:center;
+      background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;
+      transition:.2s transform,.2s box-shadow;
+    }
+    .vehicle-card:hover{transform:translateY(-2px);box-shadow:0 18px 35px rgba(12,45,75,.10)}
+    .vehicle-photo{
+      height:82px;border-radius:17px;background:
+      linear-gradient(135deg,rgba(0,152,232,.18),rgba(0,111,214,.08));
+      display:grid;place-items:center;font-size:34px;
+    }
+    .vehicle-card h4{margin:0 0 5px;font-size:17px}
+    .meta{color:var(--muted);font-size:13px;display:flex;gap:12px;flex-wrap:wrap}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;
+      font-size:12px;font-weight:900;
+    }
+    .green{background:#dcfce7;color:#166534}.amber{background:#fef3c7;color:#92400e}.red{background:#fee2e2;color:#991b1b}.blue{background:#dbeafe;color:#1d4ed8}
+    .btn{
+      border:0;border-radius:14px;padding:11px 15px;font-weight:900;cursor:pointer;
+      background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;
+      box-shadow:0 12px 20px rgba(0,152,232,.22);
+    }
+    .btn.secondary{background:#f1f5f9;color:#213047;box-shadow:none}
+    .btn.danger{background:#fee2e2;color:#991b1b;box-shadow:none}
+    .btn.disabled,.btn:disabled{background:#e5e7eb!important;color:#667085!important;box-shadow:none!important;cursor:not-allowed;opacity:.8}
+    .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+    .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-weight:900;color:var(--muted);cursor:pointer}
+    .tab.active{background:var(--dark);color:#fff;border-color:var(--dark)}
+    .booking-row{
+      display:grid;grid-template-columns:1fr auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)
+    }
+    .booking-row:last-child{border-bottom:0}
+    .booking-row strong{display:block;margin-bottom:4px}
+    .booking-row span{font-size:13px;color:var(--muted)}
+    .wizard{
+      display:none;position:fixed;inset:0;background:rgba(7,24,39,.48);z-index:50;
+      padding:24px;place-items:center;
+    }
+    .wizard.open{display:grid}
+    .modal{
+      width:min(920px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:28px;
+      padding:26px;box-shadow:0 40px 100px rgba(0,0,0,.28);
+    }
+    .modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+    .modal-head h3{margin:0;font-size:24px}
+    .close{border:0;background:#eef2f7;border-radius:12px;width:40px;height:40px;font-size:20px;cursor:pointer}
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:22px}
+    .step{height:8px;border-radius:999px;background:#e5e7eb}.step.active{background:var(--blue)}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    label{font-size:13px;font-weight:900;color:#344054}
+    input,select,textarea{
+      width:100%;margin-top:7px;border:1px solid #d8e1ea;border-radius:14px;padding:12px 13px;
+      font:inherit;background:#fff;
+    }
+    textarea{min-height:88px;resize:vertical}
+    .full{grid-column:1/-1}
+    .modal-actions{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
+    .calendar{
+      display:grid;grid-template-columns:repeat(7,1fr);gap:8px
+    }
+    .day{
+      min-height:84px;border:1px solid var(--line);border-radius:16px;background:#fff;padding:9px;
+      font-size:12px;color:var(--muted)
+    }
+    .event{margin-top:8px;border-radius:9px;background:var(--blue-soft);color:#005c9c;padding:5px;font-weight:900;font-size:11px;cursor:pointer;line-height:1.25;transition:.15s transform,.15s opacity}
+    .event:hover{transform:translateY(-1px);opacity:.9}
+    .event.pending{background:#dbeafe;color:#1d4ed8}
+    .event.approved,.event.booked{background:#dcfce7;color:#166534}
+    .event.checkedout,.event.inuse{background:#fef3c7;color:#92400e}
+    .event.returned,.event.completed{background:#e7f8ee;color:#166534}
+    .event.cancelled,.event.rejected{background:#fee2e2;color:#991b1b;text-decoration:line-through}
+    .calendar-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;color:var(--muted);font-size:12px;font-weight:800}
+    .calendar-legend span{display:inline-flex;align-items:center;gap:6px}
+    .dot{width:10px;height:10px;border-radius:50%;background:#dbeafe;display:inline-block}
+    .dot.green{background:#dcfce7}.dot.amber{background:#fef3c7}.dot.red{background:#fee2e2}
+    .status-message{
+      display:none;margin-top:14px;padding:13px 15px;border-radius:15px;
+      font-weight:800;font-size:14px;line-height:1.35
+    }
+    .status-message.success{display:block;background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+    .status-message.error{display:block;background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .status-message.info{display:block;background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+
+    .field-help{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
+    .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .check-tile{
+      border:1px solid #d8e1ea;border-radius:16px;padding:13px;background:#fff;
+      display:flex;align-items:flex-start;gap:10px;font-weight:800;color:#344054;
+    }
+    .check-tile input{width:auto;margin-top:2px;accent-color:var(--blue)}
+    .inline-error{display:none;margin-top:12px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:14px;padding:12px;font-weight:800;font-size:13px}
+    .inline-error.show{display:block}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:8px}
+    .detail-card{border:1px solid var(--line);background:#f8fbff;border-radius:16px;padding:12px}
+    .detail-card strong{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.02em}
+    .detail-card span{font-weight:900;color:var(--text);word-break:break-word}
+    .detail-section-title{grid-column:1/-1;margin:12px 0 0;font-size:15px;font-weight:900;color:#102033}
+    .mini-list{grid-column:1/-1;display:grid;gap:8px;margin-top:4px}
+    .mini-row{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px 12px;font-size:13px}
+    .mini-row span{color:var(--muted)}
+    .hidden{display:none}
+    .login-screen{
+      position:fixed;inset:0;z-index:999;background:
+        radial-gradient(circle at top left, rgba(0,152,232,.22), transparent 42%),
+        linear-gradient(180deg,#f7fbff,#eef6fb);
+      display:none;place-items:center;padding:24px;
+    }
+    .login-screen.open{display:grid}
+    .login-card{
+      width:min(520px,100%);background:rgba(255,255,255,.95);border:1px solid var(--line);
+      border-radius:30px;padding:30px;box-shadow:0 40px 100px rgba(12,45,75,.18);
+    }
+    .login-card .brand{margin:0 0 22px;padding:0}
+    .login-card h2{margin:0;font-size:28px;letter-spacing:-.04em}
+    .login-card p{color:var(--muted);line-height:1.5;margin:8px 0 18px}
+    .login-actions{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap}
+    .login-error{display:none;margin-top:13px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:14px;padding:12px;font-weight:800;font-size:13px;line-height:1.35}
+    .login-error.show{display:block}
+    .login-help{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.35}
+    .mobile-top{display:none}
+    @media(max-width:980px){
+      .app{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .mobile-top{display:flex;position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);padding:12px;gap:8px;overflow:auto}
+      .mobile-top button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 12px;font-weight:900}
+      main{padding:18px}
+      .stats,.content{grid-template-columns:1fr}
+      .vehicle-card{grid-template-columns:82px 1fr}
+      .vehicle-card .actions{grid-column:1/-1;display:flex;gap:8px}
+      .form-grid{grid-template-columns:1fr}
+      .topbar{align-items:flex-start;gap:12px;flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+<div class="login-screen open" id="loginScreen">
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div>
+        <h1>Staffscanner<br>Fleet Portal</h1>
+        <span>Internal access check</span>
+      </div>
+    </div>
+    <h2>Open Fleet Portal</h2>
+    <p>Enter your work email. The portal will check your access and only show vehicles, bookings and admin tools you are allowed to use.</p>
+    <label>Work email
+      <input id="loginEmail" type="email" placeholder="name@company.co.uk" autocomplete="email">
+    </label>
+    <div id="loginError" class="login-error"></div>
+    <div class="login-actions">
+      <button class="btn" id="loginBtn" onclick="submitFleetLogin()">Continue</button>
+      <button class="btn secondary" onclick="clearSavedFleetLogin()">Clear saved email</button>
+    </div>
+    <div class="login-help">For testing, you can also add <strong>?userEmail=email@domain.co.uk</strong> to the end of the file URL.</div>
+  </div>
+</div>
+
+<div class="app locked" id="appRoot">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div>
+        <h1>Staffscanner<br>Fleet Portal</h1>
+        <span>Commercial booking system</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="active" data-view="dashboard">🏠 Dashboard</button>
+      <button data-view="book">🚗 Book Vehicle</button>
+      <button data-view="calendar">📅 Calendar</button>
+      <button data-view="mybookings">👤 My Bookings</button>
+      <button data-view="bus">🚌 Bus Journeys</button>
+      <button data-view="damage">🔧 Report Damage</button>
+      <button data-view="admin">📊 Admin</button>
+    </nav>
+    <div class="side-card">
+      <h3>Approval controlled</h3>
+      <p>Bookings remain pending until one authorised approver confirms the request. Power Automate will handle this later.</p>
+    </div>
+  </aside>
+
+  <div class="mobile-top">
+    <button data-view="dashboard">Dashboard</button>
+    <button data-view="book">Book</button>
+    <button data-view="calendar">Calendar</button>
+    <button data-view="mybookings">My Bookings</button>
+    <button data-view="damage">Damage</button>
+  </div>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h2 id="pageTitle">Fleet Dashboard</h2>
+        <p id="pageSub">Book, approve, check out and return Staffscanner vehicles.</p>
+      </div>
+      <div class="user-chip">
+        <div class="avatar">?</div>
+        <div><strong>Checking access...</strong><br><span style="color:var(--muted);font-size:12px;">Please wait</span></div>
+        <button class="btn secondary" style="padding:8px 10px;border-radius:999px;font-size:12px;" onclick="switchFleetUser()">Switch</button>
+      </div>
+    </div>
+
+    <section id="dashboard" class="view">
+      <div class="grid stats">
+        <div class="stat"><div class="label">Available Vehicles</div><div class="value" id="statAvailableVehicles">-</div></div>
+        <div class="stat"><div class="label">Pending Approvals</div><div class="value" id="statPendingApprovals">-</div></div>
+        <div class="stat"><div class="label">Today's Bookings</div><div class="value" id="statTodaysBookings">-</div></div>
+        <div class="stat"><div class="label">Vehicles In Use</div><div class="value" id="statVehiclesInUse">-</div></div>
+      </div>
+
+      <div class="grid content">
+        <div class="panel">
+          <h3>Vehicle availability</h3>
+          <div class="vehicle-list" id="vehicleList"></div>
+        </div>
+        <div class="panel">
+          <h3>Live activity</h3>
+          <div id="liveActivityList">
+            <div class="booking-row"><div><strong>Loading live activity...</strong><span>Getting recent booking activity from SharePoint.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="book" class="view hidden">
+      <div class="panel">
+        <h3>Choose a vehicle to book</h3>
+        <div class="vehicle-list" id="bookVehicleList"></div>
+      </div>
+    </section>
+
+    <section id="calendar" class="view hidden">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <div>
+            <h3 id="calendarTitle" style="margin:0;">Booking calendar</h3>
+            <p id="calendarRangeLabel" style="margin:6px 0 0;color:var(--muted);font-size:13px;">Loading calendar...</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button class="btn secondary" onclick="moveCalendar(-1)">Previous</button>
+            <button class="btn secondary" onclick="goToTodayCalendar()">Today</button>
+            <button class="btn secondary" onclick="moveCalendar(1)">Next</button>
+          </div>
+        </div>
+        <div class="tabs" id="calendarModeTabs">
+          <button class="tab active" data-calendar-mode="month" onclick="setCalendarMode('month')">Month</button>
+          <button class="tab" data-calendar-mode="week" onclick="setCalendarMode('week')">Week</button>
+          <button class="tab" data-calendar-mode="day" onclick="setCalendarMode('day')">Day</button>
+        </div>
+        <div class="calendar-legend"><span><i class="dot"></i>Pending</span><span><i class="dot green"></i>Approved/Returned</span><span><i class="dot amber"></i>Checked out</span><span><i class="dot red"></i>Rejected/Cancelled</span></div>
+        <div class="calendar" id="calendarGrid"></div>
+      </div>
+    </section>
+
+    <section id="mybookings" class="view hidden">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <h3 style="margin:0;">My bookings</h3>
+          <button class="btn secondary" onclick="loadMyBookings()">Refresh</button>
+        </div>
+        <div class="tabs" id="myBookingsFilters">
+          <button class="tab active" data-booking-filter="all" onclick="setMyBookingsFilter('all')">All</button>
+          <button class="tab" data-booking-filter="pending" onclick="setMyBookingsFilter('pending')">Pending</button>
+          <button class="tab" data-booking-filter="approved" onclick="setMyBookingsFilter('approved')">Approved</button>
+          <button class="tab" data-booking-filter="inuse" onclick="setMyBookingsFilter('inuse')">Checked out</button>
+          <button class="tab" data-booking-filter="returned" onclick="setMyBookingsFilter('returned')">Returned</button>
+          <button class="tab" data-booking-filter="cancelled" onclick="setMyBookingsFilter('cancelled')">Rejected/Cancelled</button>
+        </div>
+        <div id="myBookingsList">
+          <div class="booking-row"><div><strong>Loading bookings...</strong><span>Getting your live bookings from SharePoint.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bus" class="view hidden">
+      <div class="panel">
+        <h3>Bus journey log</h3>
+        <div class="form-grid">
+          <label>Booking Reference<input id="busBookingReference" placeholder="BK000015"></label>
+          <label>Resident Name<input id="busResidentName" placeholder="Resident name"></label>
+          <label>Destination<input id="busDestination" placeholder="Hospital / GP / Activity location"></label>
+          <label>Journey Purpose<select id="busJourneyPurpose"><option>Hospital Appointment</option><option>GP Appointment</option><option>Day Trip</option><option>Activity</option><option>Shopping</option><option>Other</option></select></label>
+          <label>Escort<input id="busEscort" placeholder="Escort name"></label>
+          <label>Outbound Time<input id="busOutboundTime" type="datetime-local"></label>
+          <label>Return Time<input id="busReturnTime" type="datetime-local"></label>
+          <label class="full">Notes<textarea id="busNotes" placeholder="Any additional journey notes"></textarea></label>
+        </div>
+        <button class="btn" style="margin-top:16px;">Save journey log</button>
+      </div>
+    </section>
+
+    <section id="damage" class="view hidden">
+      <div class="panel">
+        <h3>Report vehicle damage</h3>
+        <p style="margin-top:-8px;color:var(--muted);font-size:14px;">Submit a live damage report into the Vehicle Damage Reports SharePoint list.</p>
+        <div class="form-grid">
+          <label>Vehicle
+            <select id="damageVehicleSelect"></select>
+          </label>
+          <label>Booking Reference
+            <input id="damageBookingReference" placeholder="Optional booking reference, e.g. BK-20260612-091838">
+            <div class="field-help">Leave blank for a general vehicle damage report.</div>
+          </label>
+          <label>Reported By
+            <input id="damageReportedBy" value="William Grier">
+          </label>
+          <label>Damage Type
+            <select id="damageType">
+              <option>Scratch</option>
+              <option>Dent</option>
+              <option>Broken Glass</option>
+              <option>Mechanical</option>
+              <option>Tyre</option>
+              <option>Accident</option>
+              <option>Interior Damage</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>Repair Required
+            <select id="damageRepairRequired">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </label>
+          <label>Photo Upload
+            <input id="damagePhoto" type="file" accept="image/*">
+            <div class="field-help">Optional. If selected, the photo will be attached to the SharePoint damage report item.</div>
+          </label>
+          <label class="full">Description
+            <textarea id="damageDescription" placeholder="Describe the damage, location on vehicle, and what happened"></textarea>
+          </label>
+          <label class="full">Notes
+            <textarea id="damageNotes" placeholder="Optional additional notes"></textarea>
+          </label>
+        </div>
+        <button class="btn" id="submitDamageBtn" style="margin-top:16px;" onclick="submitDamageReport()">Submit damage report</button>
+        <div id="damageStatus" class="status-message"></div>
+      </div>
+    </section>
+
+    <section id="admin" class="view hidden">
+      <div class="grid stats">
+        <div class="stat"><div class="label">Pending Approvals</div><div class="value" id="adminPendingApprovals">-</div></div>
+        <div class="stat"><div class="label">Currently Checked Out</div><div class="value" id="adminCheckedOutCount">-</div></div>
+        <div class="stat"><div class="label">Returned Today</div><div class="value" id="adminReturnedToday">-</div></div>
+        <div class="stat"><div class="label">Late Returns</div><div class="value" id="adminLateReturns">-</div></div>
+      </div>
+
+      <div class="grid stats">
+        <div class="stat"><div class="label">Monthly Mileage</div><div class="value" id="adminMonthlyMileage">-</div></div>
+        <div class="stat"><div class="label">Damage Flagged</div><div class="value" id="adminDamageReports">-</div></div>
+        <div class="stat"><div class="label">Vehicles Available</div><div class="value" id="adminVehiclesAvailable">-</div></div>
+        <div class="stat"><div class="label">Fleet In Use</div><div class="value" id="adminFleetInUse">-</div></div>
+      </div>
+
+      <div class="grid content">
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+            <h3 style="margin:0;">Admin approval queue</h3>
+            <button class="btn secondary" onclick="loadDashboardStats(); loadAdminQueue();">Refresh</button>
+          </div>
+          <div id="adminQueue">
+            <div class="booking-row"><div><strong>Loading pending approvals...</strong><span>Getting live approval queue from SharePoint.</span></div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Fleet status</h3>
+          <div id="adminFleetStatusList">
+            <div class="booking-row"><div><strong>Loading vehicles...</strong><span>Getting live fleet status.</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid content" style="margin-top:18px;">
+        <div class="panel">
+          <h3>Currently checked out</h3>
+          <div id="adminCheckedOutList">
+            <div class="booking-row"><div><strong>Loading checked-out vehicles...</strong><span>Getting live checked-out bookings.</span></div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Returned today</h3>
+          <div id="adminReturnedTodayList">
+            <div class="booking-row"><div><strong>Loading returns...</strong><span>Getting today's returned bookings.</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0;">Admin booking control</h3>
+            <p style="margin:6px 0 0;color:var(--muted);font-size:13px;">Live non-cancelled bookings. Admins can view or cancel bookings for any driver where the booking is still cancellable.</p>
+          </div>
+          <button class="btn secondary" onclick="loadDashboardStats(); loadAdminQueue();">Refresh</button>
+        </div>
+        <div id="adminAllBookingsList">
+          <div class="booking-row"><div><strong>Loading bookings...</strong><span>Getting live non-cancelled bookings from SharePoint.</span></div></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0;">Damage & repairs</h3>
+            <p style="margin:6px 0 0;color:var(--muted);font-size:13px;">Live damage reports from the Vehicle Damage Reports list.</p>
+          </div>
+          <button class="btn secondary" onclick="loadDamageReports()">Refresh</button>
+        </div>
+        <div id="adminDamageList">
+          <div class="booking-row"><div><strong>Loading damage reports...</strong><span>Getting live damage reports from SharePoint.</span></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="wizard" id="wizard">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>New vehicle booking</h3>
+        <p style="margin:6px 0 0;color:var(--muted)">This will submit the booking request for approval.</p>
+      </div>
+      <button class="close" onclick="closeWizard()">×</button>
+    </div>
+    <div class="steps"><div class="step active"></div><div class="step active"></div><div class="step"></div><div class="step"></div></div>
+    <div class="form-grid">
+      <label>Vehicle
+        <select id="vehicleSelect">
+          <option value="1">Pool Car</option>
+          <option value="2">Silverburn Bus</option>
+          <option value="3">139 SVS Van</option>
+        </select>
+      </label>
+      <label>Driver Name<input id="driverName" value="William Grier"></label>
+      <label>Driver Email<input id="driverEmail" type="email" value="william@staffscanner.co.uk"></label>
+      <label>Start Date/Time<input id="startDateTime" type="datetime-local"></label>
+      <label>End Date/Time<input id="endDateTime" type="datetime-local"></label>
+      <label>Destination<input id="destination" placeholder="Where are you going?"></label>
+      <label>Purpose<select id="purpose"><option>Client visit</option><option>Business meeting</option><option>Equipment transport</option><option>Resident transport</option><option>Other</option></select></label>
+      <label class="full">Notes<textarea id="notes" placeholder="Add any important notes for approvers"></textarea></label>
+      <div class="full" id="busExtra" style="display:none;background:#f8fbff;border:1px solid var(--line);border-radius:18px;padding:15px;">
+        <strong>Bus journey details</strong>
+        <p style="color:var(--muted);margin:6px 0 12px;">Resident journey log can be added once the booking is approved.</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeWizard()">Cancel</button>
+      <button class="btn" id="submitBookingBtn" onclick="submitBooking()">Submit for approval</button>
+    </div>
+    <div id="bookingStatus" class="status-message"></div>
+  </div>
+
+</div>
+
+<div class="wizard" id="checkOutModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>Check out vehicle</h3>
+        <p id="checkOutSub" style="margin:6px 0 0;color:var(--muted)">Record the starting mileage before the vehicle leaves.</p>
+      </div>
+      <button class="close" onclick="closeCheckOutModal()">×</button>
+    </div>
+    <div class="form-grid">
+      <label class="full">Start mileage
+        <input id="checkOutStartMileage" type="number" min="0" step="1" placeholder="Enter current mileage">
+        <div class="field-help">Use the mileage shown on the vehicle dashboard at collection.</div>
+      </label>
+    </div>
+    <div id="checkOutError" class="inline-error"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeCheckOutModal()">Cancel</button>
+      <button class="btn" id="confirmCheckOutBtn" onclick="submitCheckOut()">Confirm check out</button>
+    </div>
+  </div>
+</div>
+
+<div class="wizard" id="checkInModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>Check in vehicle</h3>
+        <p id="checkInSub" style="margin:6px 0 0;color:var(--muted)">Complete the return checklist and final mileage.</p>
+      </div>
+      <button class="close" onclick="closeCheckInModal()">×</button>
+    </div>
+    <div class="form-grid">
+      <label>End mileage
+        <input id="checkInEndMileage" type="number" min="0" step="1" placeholder="Enter return mileage">
+      </label>
+      <label>Return notes
+        <input id="checkInReturnNotes" placeholder="Optional notes">
+      </label>
+      <div class="full check-grid">
+        <label class="check-tile"><input id="checkInFuelFull" type="checkbox"> Fuel full / charged</label>
+        <label class="check-tile"><input id="checkInClean" type="checkbox"> Vehicle clean</label>
+        <label class="check-tile"><input id="checkInFuelCard" type="checkbox"> Fuel card returned</label>
+        <label class="check-tile"><input id="checkInDamage" type="checkbox" onchange="toggleDamageNotes()"> Damage reported</label>
+      </div>
+      <label class="full" id="damageNotesWrap" style="display:none;">Damage notes
+        <textarea id="checkInDamageNotes" placeholder="Describe any damage, location on vehicle, and what happened"></textarea>
+      </label>
+    </div>
+    <div id="checkInError" class="inline-error"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeCheckInModal()">Cancel</button>
+      <button class="btn" id="confirmCheckInBtn" onclick="submitCheckIn()">Confirm check in</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="wizard" id="cancelBookingModal">
+  <div class="modal" style="width:min(620px,100%);">
+    <div class="modal-head">
+      <div>
+        <h3>Cancel booking</h3>
+        <p id="cancelBookingSub" style="margin:6px 0 0;color:var(--muted)">Confirm the booking cancellation.</p>
+      </div>
+      <button class="close" onclick="closeCancelBookingModal()">×</button>
+    </div>
+
+    <div style="background:#fff7ed;border:1px solid #fed7aa;color:#92400e;border-radius:16px;padding:14px;margin-bottom:14px;font-weight:800;line-height:1.4;">
+      This will mark the booking as Cancelled and release the vehicle if it has not been checked out.
+    </div>
+
+    <div class="form-grid">
+      <label class="full">Cancellation reason
+        <textarea id="cancelBookingReason" placeholder="Example: No longer required">No longer required</textarea>
+        <div class="field-help">This will be added to the booking notes for audit history.</div>
+      </label>
+    </div>
+
+    <div id="cancelBookingError" class="inline-error"></div>
+
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeCancelBookingModal()">Keep booking</button>
+      <button class="btn danger" id="confirmCancelBookingBtn" onclick="submitCancelBooking()">Confirm cancellation</button>
+    </div>
+  </div>
+</div>
+
+<div class="wizard" id="calendarDetailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>Booking details</h3>
+        <p id="calendarDetailSub" style="margin:6px 0 0;color:var(--muted)">Live booking information from SharePoint.</p>
+      </div>
+      <button class="close" onclick="closeCalendarDetailModal()">×</button>
+    </div>
+    <div id="calendarDetailBody" class="form-grid"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeCalendarDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const POWER_AUTOMATE_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9aee66f7eac4416ebfefcd70561290b5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=qmAw-2czw2n4ntS-gslASHb5VT-XW0SoyarVDXjlxfM";
+const CHECK_AVAILABILITY_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a2fd1df0697e4b368b5892cac1ab7c13/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6LMFL5KuIhXX7JUr_fL2-2-Ki6yqewDU2VmXW6SnsH0";
+const GET_VEHICLES_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9eea742ed33440b8b259c8e10a617fb1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UW5S11NFIikwGn0_CTmlixdX-VS-oIn8u01G3NpcbUw";
+const MY_BOOKINGS_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/287e1973434c46d78959b25f1f91909f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0ItuNsJXmXJg8OiYeheeqeu6hIx9CNf_2l0f-fhzCJw";
+const CALENDAR_BOOKINGS_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/db271e09b38844589e1e79570b3c2688/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GxmbfsrgsTDC8vEaTZmMPqfpjicCzeEhLbD-aMSQyYM";
+const DASHBOARD_STATS_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/bc3e0167c51646288a8114e96cf8b17e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8nC-dDAM6kuXV5mlS1XgC1Yk0TDXCgsMhPzfKTHSSFI";
+const CHECK_OUT_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/35f9190ae2a9495cad0ee7041940996d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=7FP-M3yvlYLGdGsiT4Vv96U9pp3sIYFM4Vz2tyPCub0";
+const CHECK_IN_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/010a450d7942497ab3555456aaf7b7d7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=x-tkGeby7OWvdd_ijoo-0kEyvXM2umDEnQLBmsgF1BY";
+const ADMIN_DECISION_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/89375424399c428d877ee896b4ed22c0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=9XWwSShBKZRCz9y9SXnX6B49YcBB2tQUz-2YgGf9qCc";
+const REPORT_DAMAGE_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b472ee7431d140799c178742eb746fa1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=5j-0TrtrUmsx_YtvEy0oEDLcevKCcalMt9wOqJt8XHo";
+const DAMAGE_REPORTS_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/cd2d6ba97b174711bf556fc5c3c5bed2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dVjBplMeuOSCGf6WSGLxGkJzBDRx2y1YHS-6-vdLXl8";
+const UPDATE_DAMAGE_STATUS_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f4332e5b40e34a1f81fb4e47971f040f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6x63lg9rCClR3zZZDhAOSgaeKR68kR5xNkxE5J0V9uA";
+const CANCEL_BOOKING_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/33223914b98d4efb9b9946fa2eb82c58/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=zxlosi4AybMZ3QDfCXzUgW0GNev2YqbttBiei8MM2LE";
+const USER_CONTEXT_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8020961126d04e4abe91f1c5498890bc/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=P9TlgZUt7XlE0wiIYGj85rCAr3O3-zcXm000QcTaVgk";
+
+// Optional fallback. Leave blank for live use; use ?userEmail= for testing if needed.
+const CURRENT_USER_EMAIL = "";
+const LOGIN_STORAGE_KEY = "staffscannerFleetPortalEmail";
+let currentUserContext = null;
+
+
+let vehicles = [];
+let dashboardBookingsCache = [];
+let dashboardVehiclesCache = [];
+let damageReportsCache = [];
+
+
+
+function getUrlUserEmail(){
+  try{
+    const params = new URLSearchParams(window.location.search || "");
+    return params.get("userEmail") || params.get("user") || "";
+  }catch(e){ return ""; }
+}
+
+function normaliseChoiceArray(value){
+  if(!value) return [];
+  let raw = value;
+  if(typeof raw === "string"){
+    const text = raw.trim();
+    if(!text) return [];
+    try{ raw = JSON.parse(text); }
+    catch(e){
+      return text.split(/[,;|]/).map(x => x.trim()).filter(Boolean);
+    }
+  }
+  if(Array.isArray(raw)){
+    return raw.map(item => {
+      if(item && typeof item === "object") return item.Value || item.value || item.Label || item.Title || "";
+      return String(item || "");
+    }).map(x => x.trim()).filter(Boolean);
+  }
+  if(typeof raw === "object") return [raw.Value || raw.value || raw.Label || raw.Title || ""].filter(Boolean);
+  return [String(raw)].filter(Boolean);
+}
+
+function getStoredUserEmail(){
+  try{return localStorage.getItem(LOGIN_STORAGE_KEY) || "";}catch(e){return "";}
+}
+
+function saveStoredUserEmail(email){
+  try{localStorage.setItem(LOGIN_STORAGE_KEY, email);}catch(e){}
+}
+
+function getCurrentUserEmail(){
+  return (getUrlUserEmail() || getStoredUserEmail() || CURRENT_USER_EMAIL || "").trim().toLowerCase();
+}
+
+function showLoginScreen(message=""){
+  const screen = document.getElementById("loginScreen");
+  const app = document.getElementById("appRoot");
+  const input = document.getElementById("loginEmail");
+  const error = document.getElementById("loginError");
+  if(screen) screen.classList.add("open");
+  if(app) app.classList.add("locked");
+  if(input) input.value = getCurrentUserEmail();
+  if(error){
+    error.textContent = message || "";
+    error.classList.toggle("show", Boolean(message));
+  }
+  setTimeout(()=>input?.focus(), 50);
+}
+
+function hideLoginScreen(){
+  const screen = document.getElementById("loginScreen");
+  const app = document.getElementById("appRoot");
+  if(screen) screen.classList.remove("open");
+  if(app) app.classList.remove("locked");
+}
+
+async function submitFleetLogin(){
+  const input = document.getElementById("loginEmail");
+  const btn = document.getElementById("loginBtn");
+  const error = document.getElementById("loginError");
+  const email = (input?.value || "").trim().toLowerCase();
+  if(!email || !email.includes("@")){
+    if(error){error.textContent = "Please enter a valid work email address."; error.classList.add("show");}
+    return;
+  }
+  if(error){error.textContent = ""; error.classList.remove("show");}
+  if(btn){btn.disabled = true; btn.textContent = "Checking access...";}
+  saveStoredUserEmail(email);
+  try{
+    await initialisePortal(true);
+  }catch(e){
+    showLoginScreen(e.message || "Your access could not be checked.");
+  }finally{
+    if(btn){btn.disabled = false; btn.textContent = "Continue";}
+  }
+}
+
+function clearSavedFleetLogin(){
+  try{localStorage.removeItem(LOGIN_STORAGE_KEY);}catch(e){}
+  const input = document.getElementById("loginEmail");
+  if(input) input.value = "";
+  const error = document.getElementById("loginError");
+  if(error){error.textContent = "Saved email cleared."; error.classList.add("show");}
+}
+
+function switchFleetUser(){
+  currentUserContext = null;
+  try{localStorage.removeItem(LOGIN_STORAGE_KEY);}catch(e){}
+  showLoginScreen("Enter another work email to switch view.");
+}
+
+async function loadUserContext(){
+  const email = getCurrentUserEmail();
+  if(!email){
+    throw new Error("No user email has been set for the Fleet Portal.");
+  }
+
+  const response = await fetch(USER_CONTEXT_URL, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({userEmail: email})
+  });
+
+  let data = {};
+  try { data = await response.json(); } catch(e) {}
+
+  if(!response.ok || data.success === false){
+    throw new Error(data.message || `User Context returned ${response.status}`);
+  }
+
+  currentUserContext = {
+    success: true,
+    displayName: data.displayName || email,
+    email: data.email || email,
+    company: data.company || "",
+    role: data.role || "Standard",
+    allowedCompanies: normaliseChoiceArray(data.allowedCompanies),
+    busJourneyAccess: data.busJourneyAccess === true || String(data.busJourneyAccess).toLowerCase() === "true",
+    active: data.active === true || String(data.active).toLowerCase() === "true",
+    isAdmin: data.isAdmin === true || String(data.isAdmin).toLowerCase() === "true",
+    isSuperAdmin: data.isSuperAdmin === true || String(data.isSuperAdmin).toLowerCase() === "true"
+  };
+
+  if(currentUserContext.isSuperAdmin && !currentUserContext.allowedCompanies.length){
+    currentUserContext.allowedCompanies = ["Staffscanner", "Silverburn", "139SVS", "CSAH"];
+  }
+
+  applyUserContextToUi();
+  return currentUserContext;
+}
+
+function userHasCompany(company){
+  if(!currentUserContext) return true;
+  if(currentUserContext.isSuperAdmin) return true;
+  if(!company) return false;
+  const allowed = (currentUserContext.allowedCompanies || []).map(c => String(c).toLowerCase());
+  return allowed.includes(String(company).toLowerCase());
+}
+
+function initialsForName(name){
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return "?";
+  return parts.slice(0,2).map(p => p[0]).join("").toUpperCase();
+}
+
+function applyUserContextToUi(){
+  if(!currentUserContext) return;
+
+  document.querySelectorAll('[data-view="admin"]').forEach(btn => {
+    btn.style.display = currentUserContext.isAdmin ? "" : "none";
+  });
+
+  document.querySelectorAll('[data-view="bus"]').forEach(btn => {
+    btn.style.display = currentUserContext.busJourneyAccess ? "" : "none";
+  });
+
+  const chip = document.querySelector(".user-chip");
+  if(chip){
+    const avatar = chip.querySelector(".avatar");
+    const strong = chip.querySelector("strong");
+    const span = chip.querySelector("span");
+    if(avatar) avatar.textContent = initialsForName(currentUserContext.displayName);
+    if(strong) strong.textContent = currentUserContext.displayName;
+    if(span) span.textContent = `${currentUserContext.role} · ${currentUserContext.allowedCompanies.join(", ") || currentUserContext.company || "No company"}`;
+  }
+
+  const sideCard = document.querySelector(".side-card p");
+  if(sideCard){
+    sideCard.textContent = currentUserContext.isAdmin
+      ? "Admin access enabled. You will only manage companies you are allowed to see."
+      : "Standard access enabled. You will only see vehicles and bookings for your allowed company.";
+  }
+
+  const activeView = document.querySelector(".view:not(.hidden)");
+  if(activeView && activeView.id === "admin" && !currentUserContext.isAdmin){
+    const dashboardBtn = document.querySelector('[data-view="dashboard"]');
+    if(dashboardBtn) dashboardBtn.click();
+  }
+}
+
+function accessDeniedHtml(message){
+  return `<div class="panel"><h3>Access not available</h3><p style="color:var(--muted);font-weight:800;line-height:1.5;">${escapeHtml(message)}</p></div>`;
+}
+
+function inferCompanyFromText(value){
+  const text = String(value || "").toLowerCase();
+  if(text.includes("silverburn")) return "Silverburn";
+  if(text.includes("139svs") || text.includes("139 svs")) return "139SVS";
+  if(text.includes("csah") || text.includes("carestaff")) return "CSAH";
+  if(text.includes("staffscanner")) return "Staffscanner";
+  return "";
+}
+
+function vehicleCompanyFromItem(item){
+  const explicit = asChoiceValue(item?.Company)
+    || asChoiceValue(item?.["Company/Value"])
+    || asChoiceValue(item?.company)
+    || asChoiceValue(item?.CompanyValue)
+    || asChoiceValue(item?.VehicleCompany)
+    || asChoiceValue(item?.Vehicle_x0020_Company);
+
+  if(explicit) return explicit;
+
+  // Safety fallback while the Get Vehicles flow is being updated to return the Company field.
+  // Most vehicle titles are prefixed like "Staffscanner -", "Silverburn -", or "139SVS -".
+  const inferred = inferCompanyFromText(item?.name || item?.Title || item?.Vehicle || item?.VehicleName || item?.vehicleName);
+  if(inferred) return inferred;
+
+  // Current legacy/default vehicles without a prefix are Staffscanner pool vehicles.
+  return "Staffscanner";
+}
+
+function bookingCompany(item){
+  const explicit = asChoiceValue(item?.Company) || asChoiceValue(item?.["Company/Value"]) || asChoiceValue(item?.company);
+  if(explicit) return explicit;
+
+  const vehicleName = bookingVehicleName(item).toLowerCase();
+  const recordId = String(item?.VehicleRecordID || item?.Vehicle_x0020_Record_x0020_ID || item?.VehicleId || item?.Vehicle_x0020_Id || "");
+  const matched = (vehicles || []).find(v =>
+    String(v.name || "").toLowerCase() === vehicleName || String(v.id || "") === recordId || String(v.vehicleId || "") === recordId
+  );
+  return matched?.company || "";
+}
+
+function canAccessBooking(item){
+  return userHasCompany(bookingCompany(item));
+}
+
+function filterAccessibleBookings(items){
+  return (Array.isArray(items) ? items : []).filter(canAccessBooking);
+}
+
+function filterAccessibleVehicles(items){
+  return (Array.isArray(items) ? items : []).filter(v => userHasCompany(v.company));
+}
+
+function filterAccessibleDamageReports(items){
+  return (Array.isArray(items) ? items : []).filter(item => {
+    const explicit = asChoiceValue(item?.Company) || asChoiceValue(item?.["Company/Value"]) || asChoiceValue(item?.company);
+    if(explicit) return userHasCompany(explicit);
+    const vehicleName = String(item?.VehicleName || item?.Vehicle_x0020_Name || "").toLowerCase();
+    const matched = (vehicles || []).find(v => String(v.name || "").toLowerCase() === vehicleName);
+    return userHasCompany(matched?.company || "");
+  });
+}
+
+function setStatValue(id, value){
+  const el = document.getElementById(id);
+  if(el) el.textContent = Number.isFinite(value) ? String(value) : "0";
+}
+
+function isSameLocalDate(dateValue, compareDate){
+  if(!dateValue) return false;
+  const d = new Date(dateValue);
+  if(Number.isNaN(d.getTime())) return false;
+  return d.getFullYear() === compareDate.getFullYear()
+    && d.getMonth() === compareDate.getMonth()
+    && d.getDate() === compareDate.getDate();
+}
+
+function itemChoice(item, fieldName){
+  if(!item) return "";
+  return asChoiceValue(item?.[fieldName])
+    || asChoiceValue(item?.[`${fieldName}/Value`])
+    || asChoiceValue(item?.[`${fieldName}Value`])
+    || asChoiceValue(item?.[fieldName.replace(/\s+/g, "_x0020_")])
+    || "";
+}
+
+function calculateDashboardStats(vehiclesData, bookingsData){
+  const rawVehicles = Array.isArray(vehiclesData) ? vehiclesData : [];
+  const vehicleRows = filterAccessibleVehicles(
+    rawVehicles.map(v => v && v.id !== undefined && v.name !== undefined ? v : normaliseVehicle(v))
+  );
+  const bookingRows = filterAccessibleBookings(Array.isArray(bookingsData) ? bookingsData : []);
+  const today = new Date();
+
+  const availableVehicles = vehicleRows.filter(v => String(v.status || itemChoice(v, "Status")).toLowerCase() === "available").length;
+
+  const pendingApprovals = bookingRows.filter(b => {
+    const status = itemChoice(b, "ApprovalStatus").toLowerCase();
+    return status === "pending";
+  }).length;
+
+  const todaysBookings = bookingRows.filter(b => {
+    const start = b.StartDate_x002f_Time || b.StartDateTime || b.Start;
+    return isSameLocalDate(start, today);
+  }).length;
+
+  const vehiclesInUse = vehicleRows.filter(v => {
+    const status = String(v.status || itemChoice(v, "Status")).toLowerCase();
+    return status.includes("in use") || status.includes("checked");
+  }).length;
+
+  return {availableVehicles, pendingApprovals, todaysBookings, vehiclesInUse};
+}
+
+
+function setTextValue(id, value){
+  const el = document.getElementById(id);
+  if(el) el.textContent = value === undefined || value === null || value === "" ? "-" : String(value);
+}
+
+function pickField(item, names){
+  for(const name of names){
+    if(item && item[name] !== undefined && item[name] !== null && item[name] !== "") return item[name];
+  }
+  return "";
+}
+
+function numberField(item, names){
+  const raw = pickField(item, names);
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function boolField(item, names){
+  const raw = pickField(item, names);
+  if(typeof raw === "boolean") return raw;
+  if(typeof raw === "string") return ["true", "yes", "1"].includes(raw.toLowerCase());
+  return Boolean(raw);
+}
+
+function bookingSortDate(item){
+  const raw = pickField(item, ["Modified", "Created", "CheckOutTime", "Check_x0020_Out_x0020_Time", "CheckInTime", "Check_x0020_In_x0020_Time", "StartDate_x002f_Time", "StartDateTime", "Start"]);
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? new Date(0) : d;
+}
+
+function activityStatusLabel(item){
+  const state = bookingState(item);
+  const status = bookingStatus(item).toLowerCase();
+
+  if(state === "cancelled") return status.includes("reject") ? "Rejected" : "Cancelled";
+  if(state === "inuse") return "Checked Out";
+
+  if(state === "returned"){
+    const plannedEnd = new Date(item.EndDate_x002f_Time || item.EndDateTime || item.End || "");
+    const actualIn = new Date(pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]));
+
+    if(!Number.isNaN(plannedEnd.getTime()) && !Number.isNaN(actualIn.getTime())){
+      if(actualIn < plannedEnd) return "Returned Early";
+      if(actualIn > plannedEnd) return "Returned Late";
+    }
+    return "Returned";
+  }
+
+  if(state === "approved") return "Approved";
+  return "Pending";
+}
+
+function renderLiveActivity(bookings){
+  const list = document.getElementById("liveActivityList");
+  if(!list) return;
+
+  // Permissions v3: always apply company access filtering here too, even if
+  // the dashboard stats cache has already been filtered. This prevents a
+  // standard user from seeing another company's recent booking in Live Activity.
+  const rows = filterAccessibleBookings(Array.isArray(bookings) ? bookings : [])
+    .filter(item => {
+      const status = bookingStatus(item).toLowerCase();
+      return !status.includes("draft") && !status.includes("deleted");
+    })
+    .sort((a,b) => bookingSortDate(b) - bookingSortDate(a))
+    .slice(0, 5);
+
+  if(!rows.length){
+    list.innerHTML = `<div class="booking-row"><div><strong>No recent activity</strong><span>No live vehicle booking activity was returned from SharePoint.</span></div><span class="badge green">Clear</span></div>`;
+    return;
+  }
+
+  list.innerHTML = rows.map(item => {
+    const vehicle = bookingVehicleName(item);
+    const driver = bookingDriverName(item);
+    const ref = item.BookingReference || item.Booking_x0020_Reference || item.Title || `Booking ${item.ID || ""}`;
+    const activityStatus = activityStatusLabel(item);
+    const start = formatDateTimeForDisplay(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+    const end = formatDateTimeForDisplay(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+    const checkOut = formatDateTimeForDisplay(pickField(item, ["CheckOutTime", "Check_x0020_Out_x0020_Time", "Check Out Time"]));
+    const checkIn = formatDateTimeForDisplay(pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]));
+    const destination = item.Destination || "";
+    const badgeClass = statusBadgeClass(activityStatus);
+    const movement = checkIn ? `Returned: ${checkIn}` : (checkOut ? `Checked out: ${checkOut}` : "");
+    const details = [driver, start && end ? `${start} - ${end}` : start, destination, movement].filter(Boolean).join(" · " );
+    return `<div class="booking-row"><div><strong>${vehicle} · ${ref}</strong><span>${details}</span></div><span class="badge ${badgeClass}">${activityStatus}</span></div>`;
+  }).join("");
+}
+
+function adminBookingRow(item, options={}){
+  const index = dashboardBookingsCache.indexOf(item);
+  const vehicle = bookingVehicleName(item);
+  const driver = bookingDriverName(item);
+  const ref = bookingReference(item);
+  const label = options.label || activityStatusLabel(item);
+  const badgeClass = statusBadgeClass(label);
+  const start = formatDateTimeForDisplay(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+  const end = formatDateTimeForDisplay(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+  const checkOut = formatDateTimeForDisplay(pickField(item, ["CheckOutTime", "Check_x0020_Out_x0020_Time", "Check Out Time"]));
+  const checkIn = formatDateTimeForDisplay(pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]));
+  const destination = item.Destination || "";
+  const mileageOut = pickField(item, ["MileageOut", "StartMileage", "Start_x0020_Mileage", "Start Mileage"]);
+  const mileageIn = pickField(item, ["MileageIn", "EndMileage", "End_x0020_Mileage", "End Mileage"]);
+  const movement = checkIn ? `Returned: ${checkIn}` : (checkOut ? `Checked out: ${checkOut}` : "");
+  const mileage = mileageIn ? `Mileage: ${mileageOut || "-"} → ${mileageIn}` : (mileageOut ? `Start mileage: ${mileageOut}` : "");
+  const details = [driver, start && end ? `${start} - ${end}` : start, destination, movement, mileage].filter(Boolean).join(" · ");
+  const bookingId = Number(item.ID || item.Id || item.id || 0);
+  const safeRef = jsString(ref);
+  const viewButton = index >= 0 ? `<button class="btn secondary" onclick="openBookingDetailsFromItem(dashboardBookingsCache[${index}])">View</button>` : "";
+  const cancelButton = options.showCancel && canCancelBooking(item) && bookingId
+    ? `<button class="btn danger" onclick='cancelBooking(${bookingId}, ${safeRef})'>Cancel Booking</button>`
+    : "";
+  return `<div class="booking-row"><div><strong>${escapeHtml(vehicle)} · ${escapeHtml(ref)}</strong><span>${escapeHtml(details || "No details available")}</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><span class="badge ${badgeClass}">${escapeHtml(label)}</span>${viewButton}${cancelButton}</div></div>`;
+}
+
+function renderEmptyAdminList(id, title, detail, badge="Clear"){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.innerHTML = `<div class="booking-row"><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span></div><span class="badge green">${escapeHtml(badge)}</span></div>`;
+}
+
+function renderAdminDashboard(bookings, vehiclesData){
+  const rows = filterAccessibleBookings(Array.isArray(bookings) ? bookings : []);
+
+  // Dashboard Stats may only return bookings. The main portal already loads vehicles
+  // from the Get Vehicles flow, so use that as a safe fallback for the Admin fleet panel.
+  const suppliedVehicles = Array.isArray(vehiclesData) ? vehiclesData : [];
+  const cachedVehicles = Array.isArray(dashboardVehiclesCache) ? dashboardVehiclesCache : [];
+  const loadedVehicles = Array.isArray(vehicles) ? vehicles : [];
+
+  // Pick the first vehicle source that actually normalises into usable vehicles.
+  // Dashboard Stats can return an empty or differently-shaped vehicles array, so do not let
+  // that overwrite the working vehicles already loaded by the Get Vehicles flow.
+  const normaliseFleetSource = (source) => (Array.isArray(source) ? source : [])
+    .map(normaliseVehicle)
+    .filter(v => v.id && v.name && v.name !== "Unnamed vehicle");
+
+  let normalisedFleetForStats = normaliseFleetSource(suppliedVehicles);
+  if(!normalisedFleetForStats.length) normalisedFleetForStats = normaliseFleetSource(cachedVehicles);
+  if(!normalisedFleetForStats.length) normalisedFleetForStats = normaliseFleetSource(loadedVehicles);
+
+  const now = new Date();
+
+  const pending = rows.filter(item => bookingStatus(item).toLowerCase().includes("pending") || bookingLifecycle(item).toLowerCase().includes("requested"));
+  const checkedOut = rows.filter(item => {
+    const status = bookingStatus(item).toLowerCase();
+    const lifecycle = bookingLifecycle(item).toLowerCase();
+    return status.includes("approved") && (lifecycle.includes("checked out") || lifecycle.includes("in use"));
+  });
+  const returnedToday = rows.filter(item => {
+    const lifecycle = bookingLifecycle(item).toLowerCase();
+    const checkIn = pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]);
+    return (lifecycle.includes("returned") || lifecycle.includes("complete")) && isSameLocalDate(checkIn, now);
+  });
+  const damageRows = rows.filter(item => boolField(item, ["DamageReported", "Damage_x0020_Reported", "Damage Reported"]));
+  const lateReturns = rows.filter(item => {
+    const expectedEnd = new Date(item.EndDate_x002f_Time || item.EndDateTime || item.End || "");
+    const checkIn = new Date(pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]));
+    return !Number.isNaN(expectedEnd.getTime()) && !Number.isNaN(checkIn.getTime()) && checkIn > expectedEnd;
+  });
+
+  const thisMonth = rows.filter(item => {
+    const start = new Date(item.StartDate_x002f_Time || item.StartDateTime || item.Start || item.Created || "");
+    return !Number.isNaN(start.getTime()) && start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth();
+  });
+  const monthlyMiles = thisMonth.reduce((total, item) => {
+    const startMileage = numberField(item, ["StartMileage", "MileageOut", "Start_x0020_Mileage", "Start Mileage"]);
+    const endMileage = numberField(item, ["EndMileage", "MileageIn", "End_x0020_Mileage", "End Mileage"]);
+    if(startMileage !== null && endMileage !== null && endMileage >= startMileage) return total + (endMileage - startMileage);
+    return total;
+  }, 0);
+
+  const availableVehicles = normalisedFleetForStats.filter(v => String(v.status || "").toLowerCase() === "available").length;
+  const fleetInUse = normalisedFleetForStats.filter(v => {
+    const status = String(v.status || "").toLowerCase();
+    return status.includes("in use") || status.includes("checked");
+  }).length;
+
+  setStatValue("adminPendingApprovals", pending.length);
+  setStatValue("adminCheckedOutCount", checkedOut.length);
+  setStatValue("adminReturnedToday", returnedToday.length);
+  setStatValue("adminLateReturns", lateReturns.length);
+  setTextValue("adminMonthlyMileage", monthlyMiles.toLocaleString("en-GB"));
+  setStatValue("adminDamageReports", damageRows.length);
+  setStatValue("adminVehiclesAvailable", availableVehicles);
+  setStatValue("adminFleetInUse", fleetInUse);
+
+  const checkedOutList = document.getElementById("adminCheckedOutList");
+  if(checkedOutList){
+    checkedOutList.innerHTML = checkedOut.length
+      ? checkedOut.sort((a,b)=>bookingSortDate(b)-bookingSortDate(a)).map(item => adminBookingRow(item, {label:"Checked Out"})).join("")
+      : `<div class="booking-row"><div><strong>No vehicles checked out</strong><span>Nothing is currently out with a driver.</span></div><span class="badge green">Clear</span></div>`;
+  }
+
+  const returnedList = document.getElementById("adminReturnedTodayList");
+  if(returnedList){
+    returnedList.innerHTML = returnedToday.length
+      ? returnedToday.sort((a,b)=>bookingSortDate(b)-bookingSortDate(a)).map(item => adminBookingRow(item, {label:activityStatusLabel(item)})).join("")
+      : `<div class="booking-row"><div><strong>No returns today</strong><span>No vehicles have been checked in today yet.</span></div><span class="badge blue">None</span></div>`;
+  }
+
+  const adminAllBookingsList = document.getElementById("adminAllBookingsList");
+  if(adminAllBookingsList){
+    const nonCancelled = rows.filter(item => {
+      const combined = `${bookingStatus(item)} ${bookingLifecycle(item)}`.toLowerCase();
+      return !combined.includes("cancel") && !combined.includes("reject");
+    });
+    adminAllBookingsList.innerHTML = nonCancelled.length
+      ? nonCancelled
+          .sort((a,b)=>bookingSortDate(b)-bookingSortDate(a))
+          .slice(0, 50)
+          .map(item => adminBookingRow(item, {label:bookingStateLabel(item), showCancel:true}))
+          .join("")
+      : `<div class="booking-row"><div><strong>No live bookings</strong><span>No non-cancelled bookings were returned from SharePoint.</span></div><span class="badge green">Clear</span></div>`;
+  }
+
+  // Damage & repairs is now loaded from the Vehicle Damage Reports list
+  // by loadDamageReports(), not from the booking damage flag fallback.
+
+  const fleetList = document.getElementById("adminFleetStatusList");
+  if(fleetList){
+    const normalisedFleet = normalisedFleetForStats;
+    fleetList.innerHTML = normalisedFleet.length
+      ? normalisedFleet.map(v => `<div class="booking-row"><div><strong>${escapeHtml(v.name)}</strong><span>${escapeHtml([`Reg: ${v.reg}`, `Mileage: ${v.mileage}`, v.type].filter(Boolean).join(" · "))}</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><span class="badge ${v.colour}">${escapeHtml(v.status)}</span><button class="btn secondary" onclick="openVehicleDetails(${Number(v.id)})">View</button></div></div>`).join("")
+      : (fleetList.innerHTML && fleetList.innerHTML.includes("booking-row") && !fleetList.innerHTML.includes("Loading vehicles")
+          ? fleetList.innerHTML
+          : `<div class="booking-row"><div><strong>Loading fleet status...</strong><span>Waiting for the Get Vehicles flow to return the vehicle list.</span></div><span class="badge blue">Loading</span></div>`);
+  }
+}
+
+
+
+function updateAdminSummary(bookings, vehiclesData){
+  const safeVehicles = Array.isArray(vehiclesData) && vehiclesData.length
+    ? vehiclesData
+    : (Array.isArray(dashboardVehiclesCache) && dashboardVehiclesCache.length ? dashboardVehiclesCache : vehicles);
+  renderAdminDashboard(bookings, safeVehicles);
+}
+
+
+
+function refreshAdminFromCachedData(){
+  // Re-render Admin using whichever data has loaded most recently.
+  // This prevents the Fleet Status panel showing an error if Dashboard Stats
+  // finishes before Get Vehicles.
+  const adminVisible = document.getElementById("admin") && !document.getElementById("admin").classList.contains("hidden");
+  if(adminVisible){
+    updateAdminSummary(dashboardBookingsCache || [], vehicles || []);
+  }
+}
+
+async function loadDashboardStats(){
+  try{
+    const response = await fetch(DASHBOARD_STATS_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ request: "dashboardStats", ts: new Date().toISOString() })
+    });
+
+    if(!response.ok){
+      throw new Error(`Dashboard Stats returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const vehiclesDataRaw = Array.isArray(data.vehicles) ? data.vehicles : [];
+    const bookingsDataRaw = Array.isArray(data.bookings) ? data.bookings : [];
+    const vehiclesData = filterAccessibleVehicles(vehiclesDataRaw.map(normaliseVehicle));
+    const bookingsData = filterAccessibleBookings(bookingsDataRaw);
+    dashboardBookingsCache = bookingsData;
+    dashboardVehiclesCache = vehiclesData;
+    const stats = calculateDashboardStats(vehiclesData, bookingsData);
+
+    setStatValue("statAvailableVehicles", stats.availableVehicles);
+    setStatValue("statPendingApprovals", stats.pendingApprovals);
+    setStatValue("statTodaysBookings", stats.todaysBookings);
+    setStatValue("statVehiclesInUse", stats.vehiclesInUse);
+    renderLiveActivity(bookingsData);
+    updateAdminSummary(bookingsData, vehiclesData);
+  }catch(error){
+    console.error(error);
+    setStatValue("statAvailableVehicles", 0);
+    setStatValue("statPendingApprovals", 0);
+    setStatValue("statTodaysBookings", 0);
+    setStatValue("statVehiclesInUse", 0);
+    const activity = document.getElementById("liveActivityList");
+    if(activity) activity.innerHTML = `<div class="booking-row"><div><strong>Could not load live activity</strong><span>Check the Dashboard Stats flow URL, response body and permissions.</span></div><span class="badge red">Error</span></div>`;
+    dashboardBookingsCache = [];
+    // Keep vehicle data from Get Vehicles if Dashboard Stats fails.
+    updateAdminSummary([], vehicles || []);
+  }
+}
+
+
+function iconForVehicleType(type, name){
+  const value = `${type || ""} ${name || ""}`.toLowerCase();
+  if(value.includes("bus")) return "🚌";
+  if(value.includes("van")) return "🚐";
+  return "🚗";
+}
+
+function colourForStatus(status){
+  const value = `${status || ""}`.toLowerCase();
+  if(value.includes("available")) return "green";
+  if(value.includes("use") || value.includes("booked") || value.includes("checked")) return "amber";
+  if(value.includes("unavailable") || value.includes("maintenance")) return "red";
+  return "blue";
+}
+
+function normaliseVehicle(v){
+  const status = v.status || "Available";
+  return {
+    id: Number(v.id),
+    vehicleId: v.vehicleId || v.VehicleId || v.Vehicle_x0020_ID || v.Title || `Vehicle ${v.id || ""}`,
+    name: v.name || "Unnamed vehicle",
+    icon: iconForVehicleType(v.type, v.name),
+    reg: v.reg || "REG TBC",
+    mileage: v.mileage ?? "0",
+    status: status,
+    colour: colourForStatus(status),
+    type: v.type || "",
+    fuelType: v.fuelType || v.FuelType || v.Fuel_x0020_Type || "-",
+    company: vehicleCompanyFromItem(v),
+    requiresBusJourney: v.requiresBusJourney ?? v.RequiresBusJourney ?? v.Requires_x0020_Bus_x0020_Journey_x0020_Log ?? v.BusJourneyAccess ?? false,
+    fuelCardRequired: v.fuelCardRequired ?? v.FuelCardRequired ?? v.Fuel_x0020_Card_x0020_Required ?? "-",
+    approvalRequired: v.approvalRequired ?? v.ApprovalRequired ?? v.Approval_x0020_Required ?? "-",
+    notes: v.notes || v.Notes || "-",
+    next: status === "Available" ? "No active booking" : status
+  };
+}
+
+function vehicleIsHardUnavailable(v){
+  const status = `${v.status || ""}`.toLowerCase();
+  return status.includes("maintenance") || status.includes("unavailable") || status.includes("out of service");
+}
+
+function vehicleIsInUseNow(v){
+  const status = `${v.status || ""}`.toLowerCase();
+  return status.includes("in use") || status.includes("checked");
+}
+
+function vehicleIsBookable(v){
+  // Only block vehicles that are genuinely unavailable/maintenance/out of service.
+  // Vehicles currently in use can still be requested for a future time slot.
+  return !vehicleIsHardUnavailable(v);
+}
+
+function vehicleCard(v, bookMode=false){
+  const canBook = vehicleIsBookable(v);
+  const buttonText = vehicleIsInUseNow(v) ? "Book for later" : (bookMode ? "Start Booking" : "Book Now");
+  const bookButton = canBook
+    ? `<button class="btn" onclick="openWizard(${v.id})">${buttonText}</button>`
+    : `<button class="btn disabled" disabled>Unavailable</button>`;
+
+  return `<div class="vehicle-card">
+    <div class="vehicle-photo">${v.icon}</div>
+    <div>
+      <h4>${v.name} <span class="badge ${v.colour}">${v.status}</span></h4>
+      <div class="meta"><span>Reg: ${v.reg}</span><span>Mileage: ${v.mileage}</span><span>${v.next}</span></div>
+    </div>
+    <div class="actions">
+      ${bookButton}
+      <button class="btn secondary" onclick="openVehicleDetails(${v.id})">View</button>
+    </div>
+  </div>`;
+}
+
+function renderVehicles(){
+  const dashboardList = document.getElementById("vehicleList");
+  const bookList = document.getElementById("bookVehicleList");
+  const vehicleSelect = document.getElementById("vehicleSelect");
+
+  const visibleVehicles = filterAccessibleVehicles(vehicles);
+
+  if(!vehicles.length){
+    dashboardList.innerHTML = `<div class="booking-row"><div><strong>No active vehicles found</strong><span>Check the Vehicles SharePoint list or Get Vehicles flow.</span></div></div>`;
+    bookList.innerHTML = dashboardList.innerHTML;
+    vehicleSelect.innerHTML = "";
+    return;
+  }
+
+  if(!visibleVehicles.length){
+    dashboardList.innerHTML = `<div class="booking-row"><div><strong>No vehicles available for your account</strong><span>Your Fleet Portal user record is active, but no vehicles match your allowed company list.</span></div><span class="badge amber">Access</span></div>`;
+    bookList.innerHTML = dashboardList.innerHTML;
+    vehicleSelect.innerHTML = "";
+    renderDamageVehicleOptions();
+    return;
+  }
+
+  dashboardList.innerHTML = visibleVehicles.map(v=>vehicleCard(v)).join("");
+  bookList.innerHTML = visibleVehicles.map(v=>vehicleCard(v,true)).join("");
+  vehicleSelect.innerHTML = visibleVehicles.map(v=>`<option value="${v.id}" ${vehicleIsBookable(v) ? "" : "disabled"}>${v.name}${v.company ? ` · ${v.company}` : ""}${vehicleIsBookable(v) ? "" : " - unavailable"}</option>`).join("");
+  renderDamageVehicleOptions();
+}
+
+function renderDamageVehicleOptions(){
+  const select = document.getElementById("damageVehicleSelect");
+  if(!select) return;
+
+  const visibleVehicles = filterAccessibleVehicles(vehicles);
+  if(!visibleVehicles.length){
+    select.innerHTML = `<option value="">No vehicles available for your account</option>`;
+    return;
+  }
+
+  select.innerHTML = visibleVehicles.map(v => `<option value="${v.id}">${v.name} (${v.reg})${v.company ? ` · ${v.company}` : ""}</option>`).join("");
+}
+
+async function loadVehicles(){
+  const dashboardList = document.getElementById("vehicleList");
+  const bookList = document.getElementById("bookVehicleList");
+
+  dashboardList.innerHTML = `<div class="booking-row"><div><strong>Loading vehicles...</strong><span>Getting live data from SharePoint.</span></div></div>`;
+  bookList.innerHTML = dashboardList.innerHTML;
+
+  try{
+    const response = await fetch(GET_VEHICLES_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ request: "vehicles", ts: new Date().toISOString() })
+    });
+
+    if(!response.ok){
+      throw new Error(`Get Vehicles returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rows = Array.isArray(data) ? data : (data.value || []);
+
+    vehicles = filterAccessibleVehicles(rows
+      .map(normaliseVehicle)
+      .filter(v => v.id && v.name));
+
+    renderVehicles();
+    refreshAdminFromCachedData();
+  }catch(error){
+    console.error(error);
+    vehicles = [
+      {id:1, name:"Pool Car", icon:"🚗", reg:"REG 1 TBC", mileage:"0", status:"Available", colour:"green", next:"Fallback vehicle"},
+      {id:2, name:"Silverburn Bus", icon:"🚌", reg:"REG 2 TBC", mileage:"0", status:"Available", colour:"green", next:"Fallback vehicle"},
+      {id:3, name:"139 SVS Van", icon:"🚐", reg:"REG 3 TBC", mileage:"0", status:"Available", colour:"green", next:"Fallback vehicle"}
+    ];
+    renderVehicles();
+    refreshAdminFromCachedData();
+  }
+}
+
+let currentCalendarStart = null;
+let currentCalendarEnd = null;
+let currentCalendarMode = "month";
+let currentCalendarViewDate = new Date();
+let calendarBookingsCache = [];
+
+function startOfDay(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function endOfDay(date){
+  const d = new Date(date);
+  d.setHours(23,59,59,999);
+  return d;
+}
+
+function startOfMonth(date){
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function endOfMonth(date){
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+function startOfWeek(date){
+  const d = startOfDay(date);
+  const day = d.getDay(); // Sunday = 0
+  const offset = day === 0 ? 6 : day - 1; // Monday-first week
+  d.setDate(d.getDate() - offset);
+  return d;
+}
+
+function endOfWeek(date){
+  return endOfDay(addDays(startOfWeek(date), 6));
+}
+
+function startOfCalendarGrid(date){
+  const start = startOfMonth(date);
+  const day = start.getDay(); // Sunday = 0
+  const offset = day === 0 ? 6 : day - 1; // Monday-first calendar
+  const gridStart = new Date(start);
+  gridStart.setDate(start.getDate() - offset);
+  gridStart.setHours(0,0,0,0);
+  return gridStart;
+}
+
+function addDays(date, days){
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function addMonths(date, months){
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months, 1);
+  return d;
+}
+
+function dateKey(date){
+  const d = new Date(date);
+  if(Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function eventDateKey(value){
+  if(!value) return "";
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return "";
+  return dateKey(d);
+}
+
+function timeOnly(value){
+  if(!value) return "";
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit", hour12:false});
+}
+
+function calendarBookingTitle(item){
+  const vehicle = bookingVehicleName(item);
+  const driver = bookingDriverName(item);
+  const start = timeOnly(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+  const end = timeOnly(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+  const status = bookingLifecycle(item) || bookingStatus(item);
+  const timeRange = start && end ? `${start}-${end}` : start;
+  return `${timeRange} ${vehicle} · ${driver} (${status})`;
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function calendarEventClass(item){
+  const combined = `${bookingLifecycle(item)} ${bookingStatus(item)}`.toLowerCase();
+  if(combined.includes("reject")) return "rejected";
+  if(combined.includes("cancel")) return "cancelled";
+  if(combined.includes("checked out")) return "checkedout";
+  if(combined.includes("in use")) return "inuse";
+  if(combined.includes("return")) return "returned";
+  if(combined.includes("complete")) return "completed";
+  if(combined.includes("approve")) return "approved";
+  if(combined.includes("book")) return "booked";
+  if(combined.includes("pending") || combined.includes("request")) return "pending";
+  return "pending";
+}
+
+function calendarEventHtml(item, index){
+  const cls = calendarEventClass(item);
+  const title = escapeHtml(calendarBookingTitle(item));
+  return `<div class="event ${cls}" onclick="openCalendarBookingDetails(${index})" title="Open booking details">${title}</div>`;
+}
+
+function openCalendarBookingDetails(index){
+  openBookingDetailsFromItem(calendarBookingsCache[index]);
+}
+
+function closeCalendarDetailModal(){
+  document.getElementById("calendarDetailModal").classList.remove("open");
+}
+
+function calendarRangeForMode(){
+  if(currentCalendarMode === "week"){
+    const start = startOfWeek(currentCalendarViewDate);
+    return {start, end: endOfWeek(currentCalendarViewDate), gridStart: start, days: 7};
+  }
+
+  if(currentCalendarMode === "day"){
+    const start = startOfDay(currentCalendarViewDate);
+    return {start, end: endOfDay(currentCalendarViewDate), gridStart: start, days: 1};
+  }
+
+  const visibleStart = startOfCalendarGrid(currentCalendarViewDate);
+  const visibleEnd = endOfDay(addDays(visibleStart, 34));
+  return {
+    start: startOfMonth(currentCalendarViewDate),
+    end: endOfMonth(currentCalendarViewDate),
+    gridStart: visibleStart,
+    gridEnd: visibleEnd,
+    days: 35
+  };
+}
+
+function updateCalendarHeader(start, end){
+  const title = document.getElementById("calendarTitle");
+  const rangeLabel = document.getElementById("calendarRangeLabel");
+
+  const monthLabel = currentCalendarViewDate.toLocaleDateString("en-GB", {month:"long", year:"numeric"});
+  if(title) title.textContent = currentCalendarMode === "month" ? `Booking calendar - ${monthLabel}` : "Booking calendar";
+
+  if(rangeLabel){
+    if(currentCalendarMode === "month"){
+      rangeLabel.textContent = monthLabel;
+    }else if(currentCalendarMode === "week"){
+      rangeLabel.textContent = `${start.toLocaleDateString("en-GB", {day:"2-digit", month:"short"})} - ${end.toLocaleDateString("en-GB", {day:"2-digit", month:"short", year:"numeric"})}`;
+    }else{
+      rangeLabel.textContent = start.toLocaleDateString("en-GB", {weekday:"long", day:"2-digit", month:"long", year:"numeric"});
+    }
+  }
+}
+
+function setCalendarMode(mode){
+  currentCalendarMode = mode || "month";
+  document.querySelectorAll("#calendarModeTabs .tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.calendarMode === currentCalendarMode);
+  });
+  loadCalendarBookings();
+}
+
+function moveCalendar(direction){
+  const dir = Number(direction) || 0;
+  if(currentCalendarMode === "month") currentCalendarViewDate = addMonths(currentCalendarViewDate, dir);
+  if(currentCalendarMode === "week") currentCalendarViewDate = addDays(currentCalendarViewDate, dir * 7);
+  if(currentCalendarMode === "day") currentCalendarViewDate = addDays(currentCalendarViewDate, dir);
+  loadCalendarBookings();
+}
+
+function goToTodayCalendar(){
+  currentCalendarViewDate = new Date();
+  loadCalendarBookings();
+}
+
+async function loadCalendarBookings(){
+  const grid = document.getElementById("calendarGrid");
+  if(!grid) return;
+
+  const range = calendarRangeForMode();
+  currentCalendarStart = range.start;
+  currentCalendarEnd = range.end;
+  updateCalendarHeader(range.start, range.end);
+
+  grid.innerHTML = `<div class="day" style="grid-column:1/-1"><strong>Loading calendar...</strong><br>Getting live bookings from SharePoint.</div>`;
+
+  try{
+    const response = await fetch(CALENDAR_BOOKINGS_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        startDate: (range.gridStart || range.start).toISOString(),
+        endDate: (range.gridEnd || range.end).toISOString(),
+        mode: currentCalendarMode
+      })
+    });
+
+    if(!response.ok){
+      throw new Error(`Calendar Bookings returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const bookings = filterAccessibleBookings(Array.isArray(data) ? data : (data.value || []));
+    renderCalendar(bookings, range.gridStart || range.start, range.days);
+  }catch(error){
+    console.error(error);
+    grid.innerHTML = `<div class="day" style="grid-column:1/-1"><strong>Could not load calendar</strong><br>Check the Vehicle Portal - Calendar Bookings flow URL, response body and permissions.</div>`;
+  }
+}
+
+function renderCalendar(bookings, gridStart, days){
+  const grid = document.getElementById("calendarGrid");
+  const grouped = {};
+
+  // Permissions v3: calendar display is filtered again at render time so the
+  // user only sees bookings for their allowed company/companies.
+  calendarBookingsCache = filterAccessibleBookings(Array.isArray(bookings) ? bookings : []);
+
+  calendarBookingsCache.forEach((item, index) => {
+    const startValue = item.StartDate_x002f_Time || item.StartDateTime || item.Start;
+    const key = eventDateKey(startValue);
+    if(!key) return;
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push({item, index});
+  });
+
+  const weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const columns = currentCalendarMode === "day" ? 1 : 7;
+  grid.style.gridTemplateColumns = `repeat(${columns},1fr)`;
+
+  let html = "";
+  if(currentCalendarMode !== "day"){
+    html += weekdayNames.map(day => `<div class="day" style="min-height:34px;background:#f8fbff;font-weight:900;color:var(--muted);">${day}</div>`).join("");
+  }
+
+  const todayKey = dateKey(new Date());
+  const totalDays = days || 35;
+  const currentMonth = currentCalendarViewDate.getMonth();
+
+  for(let i=0;i<totalDays;i++){
+    const d = addDays(gridStart, i);
+    const key = dateKey(d);
+    const dayBookings = grouped[key] || [];
+    dayBookings.sort((a,b) => new Date(a.item.StartDate_x002f_Time || a.item.StartDateTime || a.item.Start || "") - new Date(b.item.StartDate_x002f_Time || b.item.StartDateTime || b.item.Start || ""));
+    const maxEvents = currentCalendarMode === "day" ? 20 : 4;
+    const events = dayBookings.slice(0,maxEvents).map(({item,index}) => calendarEventHtml(item, index)).join("");
+    const more = dayBookings.length > maxEvents ? `<div class="event" onclick="alert('${dayBookings.length - maxEvents} more bookings on this day. Open SharePoint for the full list.')">+${dayBookings.length - maxEvents} more</div>` : "";
+    const todayStyle = key === todayKey ? 'outline:2px solid var(--blue);' : "";
+    const mutedStyle = currentCalendarMode === "month" && d.getMonth() !== currentMonth ? 'opacity:.45;' : "";
+    const dayLabel = currentCalendarMode === "day"
+      ? d.toLocaleDateString("en-GB", {weekday:"long", day:"2-digit", month:"long", year:"numeric"})
+      : d.getDate();
+    const empty = !dayBookings.length && currentCalendarMode === "day" ? `<div style="margin-top:10px;color:var(--muted);font-weight:800;">No bookings for this day.</div>` : "";
+    html += `<div class="day" style="${todayStyle}${mutedStyle}"><strong>${dayLabel}</strong>${events}${more}${empty}</div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+
+
+function asChoiceValue(value){
+  if(value === null || value === undefined) return "";
+  if(typeof value === "object") return value.Value || value.value || value.Label || value.DisplayName || value.Email || "";
+  return String(value);
+}
+
+function bookingVehicleName(item){
+  return asChoiceValue(item.Vehicle) || asChoiceValue(item.VehicleId) || asChoiceValue(item.Vehicle_x0020_Id) || "Vehicle";
+}
+
+function bookingDriverName(item){
+  return asChoiceValue(item.Driver) || item.Driver?.DisplayName || item.Driver?.Email || "Driver";
+}
+
+function bookingStatus(item){
+  return asChoiceValue(item.ApprovalStatus)
+    || asChoiceValue(item["ApprovalStatus/Value"])
+    || asChoiceValue(item.Approval_x0020_Status)
+    || asChoiceValue(item["Approval_x0020_Status/Value"])
+    || "Pending";
+}
+
+function bookingLifecycle(item){
+  return asChoiceValue(item.VehicleLifecycle)
+    || asChoiceValue(item.Vehicle_x0020_Lifecycle)
+    || asChoiceValue(item.Status)
+    || asChoiceValue(item["Status/Value"])
+    || "";
+}
+
+function formatDateTimeForDisplay(value){
+  if(!value) return "";
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString("en-GB", {
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric",
+    hour:"2-digit",
+    minute:"2-digit",
+    hour12:false
+  });
+}
+
+function statusBadgeClass(status){
+  const s = `${status || ""}`.toLowerCase();
+  if(s.includes("approved") || s.includes("booked") || s.includes("completed") || s.includes("returned")) return "green";
+  if(s.includes("pending") || s.includes("requested")) return "blue";
+  if(s.includes("reject") || s.includes("cancel")) return "red";
+  return "amber";
+}
+
+function canCheckOutBooking(item){
+  const status = bookingStatus(item).toLowerCase();
+  const lifecycle = bookingLifecycle(item).toLowerCase();
+
+  const isApproved = status.includes("approved");
+  const alreadyOut = lifecycle.includes("checked out") || lifecycle.includes("in use");
+  const completed = lifecycle.includes("returned") || lifecycle.includes("complete");
+  const cancelled = lifecycle.includes("cancel") || status.includes("reject");
+
+  return isApproved && !alreadyOut && !completed && !cancelled;
+}
+
+
+function canCheckInBooking(item){
+  const lifecycle = bookingLifecycle(item).toLowerCase();
+  const status = bookingStatus(item).toLowerCase();
+  const returned = lifecycle.includes("returned") || lifecycle.includes("complete");
+  const cancelled = lifecycle.includes("cancel") || status.includes("reject");
+  const checkedOut = lifecycle.includes("checked out") || lifecycle.includes("in use");
+  return checkedOut && !returned && !cancelled;
+}
+
+function canCancelBooking(item){
+  const state = bookingState(item);
+  const status = bookingStatus(item).toLowerCase();
+  const lifecycle = bookingLifecycle(item).toLowerCase();
+  const isPendingOrApproved = state === "pending" || state === "approved";
+  const alreadyOut = lifecycle.includes("checked out") || lifecycle.includes("in use");
+  const completed = lifecycle.includes("returned") || lifecycle.includes("complete");
+  const cancelled = lifecycle.includes("cancel") || status.includes("reject") || status.includes("cancel");
+  return isPendingOrApproved && !alreadyOut && !completed && !cancelled;
+}
+
+
+let pendingCancelBooking = null;
+
+function showCancelBookingError(message){
+  const el = document.getElementById("cancelBookingError");
+  if(!el) return;
+  el.textContent = message || "";
+  el.classList.toggle("show", Boolean(message));
+}
+
+function closeCancelBookingModal(){
+  document.getElementById("cancelBookingModal").classList.remove("open");
+  pendingCancelBooking = null;
+  showCancelBookingError("");
+}
+
+function cancelBooking(bookingId, bookingReference){
+  if(!bookingId){
+    alert("Could not cancel this booking because the booking ID is missing.");
+    return;
+  }
+
+  pendingCancelBooking = {
+    bookingId: String(bookingId),
+    bookingReference: bookingReference || String(bookingId)
+  };
+
+  const sub = document.getElementById("cancelBookingSub");
+  if(sub) sub.textContent = `Cancel booking ${pendingCancelBooking.bookingReference}?`;
+
+  const reason = document.getElementById("cancelBookingReason");
+  if(reason) reason.value = "No longer required";
+
+  showCancelBookingError("");
+  document.getElementById("cancelBookingModal").classList.add("open");
+}
+
+async function submitCancelBooking(){
+  if(!pendingCancelBooking){
+    showCancelBookingError("No booking is selected to cancel.");
+    return;
+  }
+
+  const btn = document.getElementById("confirmCancelBookingBtn");
+  const reason = document.getElementById("cancelBookingReason")?.value || "";
+
+  btn.disabled = true;
+  btn.textContent = "Cancelling...";
+  showCancelBookingError("");
+
+  try{
+    const response = await fetch(CANCEL_BOOKING_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        bookingId: pendingCancelBooking.bookingId,
+        cancelledBy: "William Grier",
+        cancelReason: reason
+      })
+    });
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    if(!response.ok || result.success === false){
+      throw new Error(result.message || `Cancel Booking returned ${response.status}`);
+    }
+
+    btn.textContent = "Cancelled";
+    closeCancelBookingModal();
+
+    await loadMyBookings();
+    await loadDashboardStats();
+    await loadCalendarBookings();
+    await loadVehicles();
+    if(!document.getElementById("admin")?.classList.contains("hidden")){
+      await loadAdminQueue();
+    }
+  }catch(error){
+    console.error(error);
+    showCancelBookingError(error.message || "Booking could not be cancelled. Check the Vehicle Portal - Cancel Booking flow.");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Confirm cancellation";
+  }
+}
+
+function jsString(value){
+  return JSON.stringify(String(value || ""));
+}
+
+
+function isApprovedBooking(item){
+  const status = bookingStatus(item).toLowerCase();
+  const lifecycle = bookingLifecycle(item).toLowerCase();
+  return status.includes("approved") || lifecycle.includes("booked") || lifecycle.includes("checked out") || lifecycle.includes("returned");
+}
+
+function isBusBooking(item){
+  return bookingVehicleName(item).toLowerCase().includes("bus");
+}
+
+function openBusJourneyFromBooking(bookingId, bookingReference, vehicle, destination){
+  document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"));
+  document.getElementById("bus").classList.remove("hidden");
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll('[data-view="bus"]').forEach(b=>b.classList.add("active"));
+  document.getElementById("pageTitle").textContent = titles.bus[0];
+  document.getElementById("pageSub").textContent = titles.bus[1];
+
+  const setValue = (id, value) => { const el = document.getElementById(id); if(el) el.value = value || ""; };
+  setValue("busBookingReference", bookingReference || `Booking ${bookingId || ""}`);
+  setValue("busDestination", destination || "");
+  setValue("busNotes", vehicle ? `Vehicle: ${vehicle}` : "");
+}
+
+let myBookingsCache = [];
+let myBookingsFilter = "all";
+
+function bookingReference(item){
+  return item.BookingReference || item.Booking_x0020_Reference || item.Title || `Booking ${item.ID || ""}`;
+}
+
+function bookingDateValue(item){
+  return item.StartDate_x002f_Time || item.StartDateTime || item.Start || item.Created || "";
+}
+
+function bookingState(item){
+  const status = bookingStatus(item).toLowerCase();
+  const lifecycle = bookingLifecycle(item).toLowerCase();
+  const combined = `${status} ${lifecycle}`;
+  if(combined.includes("reject") || combined.includes("cancel")) return "cancelled";
+  if(combined.includes("checked out") || combined.includes("in use")) return "inuse";
+  if(combined.includes("return") || combined.includes("complete")) return "returned";
+  if(combined.includes("approved") || combined.includes("booked")) return "approved";
+  return "pending";
+}
+
+function bookingStateLabel(item){
+  const state = bookingState(item);
+  if(state === "inuse") return "Checked Out";
+  if(state === "returned") return "Returned";
+  if(state === "approved") return "Approved";
+  if(state === "cancelled") return bookingStatus(item).toLowerCase().includes("reject") ? "Rejected" : "Cancelled";
+  return "Pending";
+}
+
+function bookingSortValue(item){
+  const state = bookingState(item);
+  const start = new Date(bookingDateValue(item));
+  const time = Number.isNaN(start.getTime()) ? 0 : start.getTime();
+  const rank = {inuse:5, approved:4, pending:3, returned:2, cancelled:1}[state] || 0;
+  return (rank * 10000000000000) + time;
+}
+
+function setMyBookingsFilter(filter){
+  myBookingsFilter = filter || "all";
+  document.querySelectorAll("#myBookingsFilters .tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.bookingFilter === myBookingsFilter);
+  });
+  renderMyBookings(myBookingsCache);
+}
+
+
+function detailCard(label, value){
+  return `<div class="detail-card"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value === undefined || value === null || value === "" ? "-" : value)}</span></div>`;
+}
+
+function yesNo(value){
+  if(value === true) return "Yes";
+  if(value === false) return "No";
+  const text = String(value ?? "").trim();
+  if(!text || text === "-") return "-";
+  if(["true","yes","1"].includes(text.toLowerCase())) return "Yes";
+  if(["false","no","0"].includes(text.toLowerCase())) return "No";
+  return text;
+}
+
+function allKnownBookings(){
+  const combined = [];
+  [dashboardBookingsCache, calendarBookingsCache, myBookingsCache].forEach(list => {
+    if(Array.isArray(list)) list.forEach(item => {
+      if(item && !combined.some(existing => String(existing.ID || existing.Id || existing.id) === String(item.ID || item.Id || item.id))) combined.push(item);
+    });
+  });
+  return combined;
+}
+
+function bookingsForVehicle(vehicle){
+  if(!vehicle) return [];
+  const vehicleName = String(vehicle.name || "").toLowerCase();
+  const vehicleId = String(vehicle.id || "");
+  return allKnownBookings()
+    .filter(item => {
+      const itemVehicle = bookingVehicleName(item).toLowerCase();
+      const recordId = String(item.VehicleRecordID || item.Vehicle_x0020_Record_x0020_ID || item.VehicleId || item.Vehicle_x0020_Id || "");
+      return itemVehicle === vehicleName || recordId === vehicleId;
+    })
+    .sort((a,b) => bookingSortValue(b) - bookingSortValue(a));
+}
+
+function openVehicleDetails(vehicleId){
+  const vehicle = vehicles.find(v => Number(v.id) === Number(vehicleId));
+  if(!vehicle) return;
+  const bookings = bookingsForVehicle(vehicle).slice(0, 6);
+  document.getElementById("calendarDetailSub").textContent = `${vehicle.name} · ${vehicle.reg}`;
+  const bookingRows = bookings.length
+    ? bookings.map(item => {
+        const ref = bookingReference(item);
+        const start = formatDateTimeForDisplay(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+        const end = formatDateTimeForDisplay(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+        const label = bookingStateLabel(item);
+        return `<div class="mini-row"><div><strong>${escapeHtml(ref)}</strong><br><span>${escapeHtml(start && end ? `${start} - ${end}` : start || "No date")}</span></div><span class="badge ${statusBadgeClass(label)}">${escapeHtml(label)}</span></div>`;
+      }).join("")
+    : `<div class="mini-row"><div><strong>No recent bookings found</strong><br><span>This vehicle has no bookings in the current returned data.</span></div><span class="badge green">Clear</span></div>`;
+  document.getElementById("calendarDetailBody").innerHTML = `
+    <div class="detail-grid full">
+      ${detailCard("Vehicle name", vehicle.name)}
+      ${detailCard("Vehicle ID", vehicle.vehicleId)}
+      ${detailCard("Registration", vehicle.reg)}
+      ${detailCard("Type", vehicle.type || "-")}
+      ${detailCard("Fuel type", vehicle.fuelType)}
+      ${detailCard("Current mileage", vehicle.mileage)}
+      ${detailCard("Status", vehicle.status)}
+      ${detailCard("Fuel card required", yesNo(vehicle.fuelCardRequired))}
+      ${detailCard("Approval required", yesNo(vehicle.approvalRequired))}
+      ${detailCard("Notes", vehicle.notes)}
+      <div class="detail-section-title">Recent bookings</div>
+      <div class="mini-list">${bookingRows}</div>
+      <div class="detail-section-title">Damage reports</div>
+      <div class="mini-list"><div class="mini-row"><div><strong>Not linked yet</strong><br><span>Damage reporting saves correctly, but a separate damage-report lookup flow is needed to show reports here.</span></div><span class="badge blue">Later</span></div></div>
+    </div>`;
+  document.getElementById("calendarDetailModal").classList.add("open");
+}
+
+function openBookingDetailsFromItem(item){
+  if(!item) return;
+  const vehicle = bookingVehicleName(item);
+  const driver = bookingDriverName(item);
+  const ref = bookingReference(item);
+  const status = bookingStatus(item);
+  const lifecycle = bookingLifecycle(item);
+  const start = formatDateTimeForDisplay(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+  const end = formatDateTimeForDisplay(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+  const destination = item.Destination || "-";
+  const purpose = item.Purpose || "-";
+  const notes = item.Notes || item.Comments || "-";
+  const startMileage = pickField(item, ["StartMileage", "MileageOut", "Start_x0020_Mileage", "Start Mileage"]);
+  const endMileage = pickField(item, ["EndMileage", "MileageIn", "End_x0020_Mileage", "End Mileage"]);
+  const checkOutTime = formatDateTimeForDisplay(pickField(item, ["CheckOutTime", "Check_x0020_Out_x0020_Time", "Check Out Time"]));
+  const checkInTime = formatDateTimeForDisplay(pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]));
+  const fuelFull = yesNo(pickField(item, ["FuelFullCharged", "Fuel_x0020_Full_x0020_Charged", "Fuel Full / Charged"]));
+  const vehicleClean = yesNo(pickField(item, ["VehicleClean", "Vehicle_x0020_Clean", "Vehicle Clean"]));
+  const fuelCard = yesNo(pickField(item, ["FuelCardReturned", "Fuel_x0020_Card_x0020_Returned", "Fuel Card Returned"]));
+  const damageReported = yesNo(pickField(item, ["DamageReported", "Damage_x0020_Reported", "Damage Reported"]));
+  const damageNotes = pickField(item, ["DamageNotes", "Damage_x0020_Notes", "Damage Notes"]);
+  document.getElementById("calendarDetailSub").textContent = `${vehicle} · ${ref}`;
+  document.getElementById("calendarDetailBody").innerHTML = `
+    <div class="detail-grid full">
+      ${detailCard("Vehicle", vehicle)}
+      ${detailCard("Booking reference", ref)}
+      ${detailCard("Driver", driver)}
+      ${detailCard("Status", `${status} / ${lifecycle || "-"}`)}
+      ${detailCard("Start", start)}
+      ${detailCard("End", end)}
+      ${detailCard("Destination", destination)}
+      ${detailCard("Purpose", purpose)}
+      <div class="detail-section-title">Mileage and return details</div>
+      ${detailCard("Start mileage", startMileage)}
+      ${detailCard("End mileage", endMileage)}
+      ${detailCard("Check out time", checkOutTime)}
+      ${detailCard("Check in time", checkInTime)}
+      ${detailCard("Fuel full / charged", fuelFull)}
+      ${detailCard("Vehicle clean", vehicleClean)}
+      ${detailCard("Fuel card returned", fuelCard)}
+      ${detailCard("Damage reported", damageReported)}
+      ${detailCard("Damage notes", damageNotes || "-")}
+      ${detailCard("Notes", notes)}
+    </div>`;
+  document.getElementById("calendarDetailModal").classList.add("open");
+}
+
+function openMyBookingDetails(index){
+  openBookingDetailsFromItem(myBookingsCache[index]);
+}
+
+function renderMyBookings(bookings){
+  const list = document.getElementById("myBookingsList");
+  if(!list) return;
+
+  // Permissions v3: My Bookings is still user-specific from the flow, but we
+  // also apply company filtering as a safety net.
+  const allRows = filterAccessibleBookings(Array.isArray(bookings) ? bookings.slice() : []);
+  const filteredRows = allRows
+    .filter(item => myBookingsFilter === "all" || bookingState(item) === myBookingsFilter)
+    .sort((a,b) => bookingSortValue(b) - bookingSortValue(a));
+
+  if(!allRows.length){
+    list.innerHTML = `<div class="booking-row"><div><strong>No bookings found</strong><span>No vehicle bookings were found for this driver email.</span></div></div>`;
+    return;
+  }
+
+  if(!filteredRows.length){
+    list.innerHTML = `<div class="booking-row"><div><strong>No ${myBookingsFilter} bookings</strong><span>Try another filter or refresh the list.</span></div><span class="badge blue">Filtered</span></div>`;
+    return;
+  }
+
+  list.innerHTML = filteredRows.map(item => {
+    const originalIndex = myBookingsCache.indexOf(item);
+    const vehicle = bookingVehicleName(item);
+    const ref = bookingReference(item);
+    const status = bookingStatus(item);
+    const lifecycle = bookingLifecycle(item);
+    const start = formatDateTimeForDisplay(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+    const end = formatDateTimeForDisplay(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+    const destination = item.Destination || "";
+    const purpose = item.Purpose || "";
+    const stateLabel = bookingStateLabel(item);
+    const badgeClass = statusBadgeClass(stateLabel);
+    const subLine = [start && end ? `${start} - ${end}` : start, destination, purpose].filter(Boolean).join(" · ");
+    const bookingId = Number(item.ID || item.Id || item.id || 0);
+    const safeRef = jsString(ref);
+    const viewButton = `<button class="btn secondary" style="margin-left:8px;" onclick='openMyBookingDetails(${originalIndex})'>View</button>`;
+    const checkOutButton = canCheckOutBooking(item) && bookingId
+      ? `<button class="btn secondary" style="margin-left:8px;" onclick='checkOutBooking(${bookingId}, ${safeRef})'>Check Out</button>`
+      : "";
+    const checkInButton = canCheckInBooking(item) && bookingId
+      ? `<button class="btn" style="margin-left:8px;" onclick='checkInBooking(${bookingId}, ${safeRef})'>Check In</button>`
+      : "";
+    const busJourneyButton = isBusBooking(item) && isApprovedBooking(item) && bookingId
+      ? `<button class="btn secondary" style="margin-left:8px;" onclick='openBusJourneyFromBooking(${bookingId}, ${safeRef}, ${jsString(vehicle)}, ${jsString(destination)})'>Bus Journey Log</button>`
+      : "";
+    const cancelButton = canCancelBooking(item) && bookingId
+      ? `<button class="btn danger" style="margin-left:8px;" onclick='cancelBooking(${bookingId}, ${safeRef})'>Cancel Booking</button>`
+      : "";
+    return `<div class="booking-row"><div><strong>${vehicle} · ${ref}</strong><span>${subLine || "No date/details available"}</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><span class="badge ${badgeClass}">${stateLabel}</span>${viewButton}${checkOutButton}${checkInButton}${busJourneyButton}${cancelButton}</div></div>`;
+  }).join("");
+}
+
+
+function isPendingApproval(item){
+  const status = bookingStatus(item).toLowerCase();
+  const lifecycle = bookingLifecycle(item).toLowerCase();
+  return status.includes("pending") || lifecycle.includes("requested");
+}
+
+function renderAdminQueue(bookings){
+  const list = document.getElementById("adminQueue");
+  if(!list) return;
+
+  const pending = (Array.isArray(bookings) ? bookings : []).filter(isPendingApproval);
+
+  if(!pending.length){
+    list.innerHTML = `<div class="booking-row"><div><strong>No pending approvals</strong><span>There are currently no vehicle bookings waiting for approval.</span></div><span class="badge green">Clear</span></div>`;
+    return;
+  }
+
+  list.innerHTML = pending.map(item => {
+    const bookingId = Number(item.ID || item.Id || item.id || 0);
+    const vehicle = bookingVehicleName(item);
+    const driver = bookingDriverName(item);
+    const ref = item.BookingReference || item.Booking_x0020_Reference || item.Title || `Booking ${bookingId || ""}`;
+    const start = formatDateTimeForDisplay(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
+    const end = formatDateTimeForDisplay(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+    const destination = item.Destination || "";
+    const purpose = item.Purpose || "";
+    const details = [driver, start && end ? `${start} - ${end}` : start, destination, purpose].filter(Boolean).join(" · ");
+    const safeRef = jsString(ref);
+    return `<div class="booking-row">
+      <div><strong>${vehicle} · ${ref}</strong><span>${details}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <button class="btn" data-admin-decision-btn="${bookingId}" onclick='processAdminDecision(${bookingId}, "Approve", ${safeRef})'>Approve</button>
+        <button class="btn secondary" data-admin-decision-btn="${bookingId}" onclick='processAdminDecision(${bookingId}, "Reject", ${safeRef})'>Reject</button>
+        ${canCancelBooking(item) && bookingId ? `<button class="btn danger" onclick='cancelBooking(${bookingId}, ${safeRef})'>Cancel Booking</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function loadAdminQueue(){
+  if(currentUserContext && !currentUserContext.isAdmin) return;
+  const list = document.getElementById("adminQueue");
+  if(!list) return;
+
+  list.innerHTML = `<div class="booking-row"><div><strong>Loading pending approvals...</strong><span>Getting live approval queue from SharePoint.</span></div></div>`;
+
+  try{
+    const response = await fetch(DASHBOARD_STATS_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ request: "adminQueue", ts: new Date().toISOString() })
+    });
+
+    if(!response.ok){
+      throw new Error(`Dashboard Stats returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const bookings = filterAccessibleBookings(Array.isArray(data.bookings) ? data.bookings : []);
+    renderAdminQueue(bookings);
+  }catch(error){
+    console.error(error);
+    list.innerHTML = `<div class="booking-row"><div><strong>Could not load approval queue</strong><span>Check the Dashboard Stats flow URL, response body and permissions.</span></div><span class="badge red">Error</span></div>`;
+  }
+}
+
+function setAdminDecisionLoading(bookingId, loading){
+  document.querySelectorAll(`[data-admin-decision-btn="${bookingId}"]`).forEach(btn => {
+    btn.disabled = loading;
+    if(loading){
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = "Processing...";
+    }else if(btn.dataset.originalText){
+      btn.textContent = btn.dataset.originalText;
+      delete btn.dataset.originalText;
+    }
+  });
+}
+
+async function processAdminDecision(bookingId, decision, bookingReference){
+  if(!bookingId){
+    alert("Booking ID is missing, so this decision cannot be processed.");
+    return;
+  }
+
+  const label = decision === "Approve" ? "approve" : "reject";
+  const confirmed = confirm(`Are you sure you want to ${label} ${bookingReference || "this booking"}?`);
+  if(!confirmed) return;
+
+  let decisionNotes = "";
+  if(decision !== "Approve"){
+    decisionNotes = prompt("Optional rejection note:") || "";
+  }
+
+  setAdminDecisionLoading(bookingId, true);
+
+  try{
+    const response = await fetch(ADMIN_DECISION_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        bookingId,
+        decision,
+        decisionNotes
+      })
+    });
+
+    if(!response.ok){
+      throw new Error(`Admin Decision returned ${response.status}`);
+    }
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    alert(result.message || "Decision processed successfully.");
+    await loadAdminQueue();
+    await loadMyBookings();
+    await loadDashboardStats();
+    await loadCalendarBookings();
+    await loadVehicles();
+  }catch(error){
+    console.error(error);
+    alert("Decision could not be processed. Check the Vehicle Portal - Admin Decision flow URL, response body and permissions.");
+    setAdminDecisionLoading(bookingId, false);
+  }
+}
+
+
+
+
+function damageStatusBadgeClass(status){
+  const s = String(status || "").toLowerCase();
+  if(s.includes("repaired") || s.includes("not required")) return "green";
+  if(s.includes("progress")) return "amber";
+  if(s.includes("open") || !s) return "blue";
+  return "amber";
+}
+
+function normaliseDamageReport(item){
+  const repairStatus = item.RepairStatus || (item.RepairComplete ? "Repaired" : "Open");
+  return {
+    id: item.ID || item.Id || item.id || "",
+    title: item.Title || "",
+    reportId: item.ReportID || item.ReportId || item.Report_x0020_ID || "",
+    vehicleName: item.VehicleName || item.Vehicle_x0020_Name || "Vehicle",
+    reportedBy: item.ReportedByName || item.Reported_x0020_By_x0020_Name || item.ReportedBy || "Unknown",
+    dateReported: item.DateReported || item.Date_x0020_Reported || "",
+    bookingReference: item.BookingReference || item.Booking_x0020_Reference || "",
+    damageType: item.DamageType || "Damage",
+    description: item.Description || "",
+    repairRequired: item.RepairRequired === true || String(item.RepairRequired).toLowerCase() === "true" || String(item.RepairRequired).toLowerCase() === "yes",
+    repairComplete: item.RepairComplete === true || String(item.RepairComplete).toLowerCase() === "true" || String(item.RepairComplete).toLowerCase() === "yes",
+    repairStatus,
+    notes: item.Notes || "",
+    photoUrl: item.PhotoUrl || item.PhotoURL || item.AttachmentUrl || item.AttachmentURL || ""
+  };
+}
+
+function renderDamageReports(reports){
+  const list = document.getElementById("adminDamageList");
+  if(!list) return;
+
+  const rows = (Array.isArray(reports) ? reports : []).map(normaliseDamageReport);
+  damageReportsCache = rows;
+
+  const openCount = rows.filter(r => !["repaired", "not required"].includes(String(r.repairStatus || "").toLowerCase())).length;
+  setStatValue("adminDamageReports", openCount);
+
+  if(!rows.length){
+    list.innerHTML = `<div class="booking-row"><div><strong>No damage reports</strong><span>No live damage reports were returned from SharePoint.</span></div><span class="badge green">Clear</span></div>`;
+    return;
+  }
+
+  rows.sort((a,b) => new Date(b.dateReported || 0) - new Date(a.dateReported || 0));
+
+  list.innerHTML = rows.map((r, index) => {
+    const date = formatDateTimeForDisplay(r.dateReported);
+    const details = [
+      r.reportId,
+      r.reportedBy,
+      date,
+      r.bookingReference ? `Booking: ${r.bookingReference}` : "",
+      r.repairRequired ? "Repair required" : "Repair not required"
+    ].filter(Boolean).join(" · ");
+    const badge = r.repairStatus || "Open";
+    return `<div class="booking-row">
+      <div>
+        <strong>${escapeHtml(r.vehicleName)} · ${escapeHtml(r.damageType)}</strong>
+        <span>${escapeHtml(details || "No details available")}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <span class="badge ${damageStatusBadgeClass(badge)}">${escapeHtml(badge)}</span>
+        ${r.photoUrl ? `<a class="btn secondary" href="${escapeHtml(r.photoUrl)}" target="_blank" rel="noopener">Photo</a>` : ""}
+        <button class="btn secondary" onclick="openDamageReportDetails(${index})">View</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function openDamageReportDetails(index){
+  const r = damageReportsCache[index];
+  if(!r) return;
+
+  const currentStatus = String(r.repairStatus || "Open").toLowerCase();
+  const repairActions = r.id
+    ? `<div class="mini-row">
+        <div><strong>Update repair status</strong><br><span>Choose the latest repair position for this damage report.</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn secondary" ${currentStatus === "in progress" ? "disabled" : ""} onclick="updateDamageStatus(${index}, 'In Progress')">Mark In Progress</button>
+          <button class="btn" ${currentStatus === "repaired" ? "disabled" : ""} onclick="updateDamageStatus(${index}, 'Repaired')">Mark Repaired</button>
+          <button class="btn secondary" ${currentStatus === "not required" ? "disabled" : ""} onclick="updateDamageStatus(${index}, 'Not Required')">Mark Not Required</button>
+        </div>
+      </div>`
+    : `<div class="mini-row"><div><strong>Cannot update status</strong><br><span>The damage report ID was not returned by the flow.</span></div><span class="badge red">Missing ID</span></div>`;
+
+  document.getElementById("calendarDetailSub").textContent = `${r.vehicleName} · ${r.reportId || "Damage report"}`;
+  document.getElementById("calendarDetailBody").innerHTML = `
+    <div class="detail-grid full">
+      ${detailCard("Report ID", r.reportId)}
+      ${detailCard("Vehicle", r.vehicleName)}
+      ${detailCard("Booking reference", r.bookingReference || "-")}
+      ${detailCard("Reported by", r.reportedBy)}
+      ${detailCard("Date reported", formatDateTimeForDisplay(r.dateReported))}
+      ${detailCard("Damage type", r.damageType)}
+      ${detailCard("Repair required", yesNo(r.repairRequired))}
+      ${detailCard("Repair complete", yesNo(r.repairComplete))}
+      ${detailCard("Repair status", r.repairStatus || "Open")}
+      <div class="detail-section-title">Description</div>
+      ${detailCard("Description", r.description || "-")}
+      ${detailCard("Notes", r.notes || "-")}
+      <div class="detail-section-title">Photo</div>
+      <div class="mini-list">
+        ${r.photoUrl
+          ? `<div class="mini-row"><div><strong>Photo available</strong><br><span>Open or download from SharePoint.</span></div><a class="btn secondary" href="${escapeHtml(r.photoUrl)}" target="_blank" rel="noopener">Open photo</a></div>`
+          : `<div class="mini-row"><div><strong>No photo link returned yet</strong><br><span>The report may still have an attachment, but the Damage Reports flow is not returning attachment links yet.</span></div><span class="badge blue">Next step</span></div>`}
+      </div>
+      <div class="detail-section-title">Repair actions</div>
+      <div class="mini-list">
+        ${repairActions}
+      </div>
+    </div>`;
+  document.getElementById("calendarDetailModal").classList.add("open");
+}
+
+async function updateDamageStatus(index, repairStatus){
+  const r = damageReportsCache[index];
+  if(!r || !r.id){
+    alert("Could not update this damage report because the report ID is missing.");
+    return;
+  }
+
+  const repairNotes = prompt(`Optional note for status: ${repairStatus}`) || "";
+
+  try{
+    const response = await fetch(UPDATE_DAMAGE_STATUS_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        damageReportId: String(r.id),
+        repairStatus,
+        updatedBy: "William Grier",
+        repairNotes
+      })
+    });
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    if(!response.ok || result.success === false){
+      throw new Error(result.message || `Update Damage Status returned ${response.status}`);
+    }
+
+    alert(result.message || "Damage repair status updated successfully.");
+    closeCalendarDetailModal();
+    await loadDamageReports();
+    await loadDashboardStats();
+  }catch(error){
+    console.error(error);
+    alert(`Damage repair status could not be updated. ${error.message || "Check the Vehicle Portal - Update Damage Status flow."}`);
+  }
+}
+
+async function loadDamageReports(){
+  const list = document.getElementById("adminDamageList");
+  if(list){
+    list.innerHTML = `<div class="booking-row"><div><strong>Loading damage reports...</strong><span>Getting live damage reports from SharePoint.</span></div><span class="badge blue">Loading</span></div>`;
+  }
+
+  try{
+    const response = await fetch(DAMAGE_REPORTS_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ statusFilter: "", vehicleName: "", ts: new Date().toISOString() })
+    });
+
+    if(!response.ok){
+      throw new Error(`Damage Reports returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reports = filterAccessibleDamageReports(Array.isArray(data) ? data : (data.value || []));
+    renderDamageReports(reports);
+  }catch(error){
+    console.error(error);
+    if(list){
+      list.innerHTML = `<div class="booking-row"><div><strong>Could not load damage reports</strong><span>Check the Vehicle Portal - Damage Reports flow URL, response body and permissions.</span></div><span class="badge red">Error</span></div>`;
+    }
+    setStatValue("adminDamageReports", 0);
+  }
+}
+
+
+function showDamageStatus(message, type="info"){
+  const status = document.getElementById("damageStatus");
+  if(!status) return;
+  status.className = `status-message ${type}`;
+  status.textContent = message;
+}
+
+function clearDamageStatus(){
+  const status = document.getElementById("damageStatus");
+  if(!status) return;
+  status.className = "status-message";
+  status.textContent = "";
+}
+
+function resetDamageForm(){
+  document.getElementById("damageBookingReference").value = "";
+  document.getElementById("damageDescription").value = "";
+  document.getElementById("damageNotes").value = "";
+  document.getElementById("damageRepairRequired").value = "false";
+  const photo = document.getElementById("damagePhoto");
+  if(photo) photo.value = "";
+}
+
+
+function fileToBase64Payload(file){
+  return new Promise((resolve, reject) => {
+    if(!file){
+      resolve({ photoName: "", photoContent: "" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const commaIndex = result.indexOf(",");
+      resolve({
+        photoName: file.name || "damage-photo.jpg",
+        photoContent: commaIndex >= 0 ? result.slice(commaIndex + 1) : result
+      });
+    };
+    reader.onerror = () => reject(reader.error || new Error("Could not read selected photo."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function submitDamageReport(){
+  const btn = document.getElementById("submitDamageBtn");
+  const vehicleSelect = document.getElementById("damageVehicleSelect");
+  const selectedVehicle = vehicles.find(v => v.id === Number(vehicleSelect?.value));
+  const rawBooking = document.getElementById("damageBookingReference").value.trim();
+  const reportedByRaw = document.getElementById("damageReportedBy").value.trim();
+  const photoInput = document.getElementById("damagePhoto");
+  const selectedPhoto = photoInput?.files && photoInput.files.length ? photoInput.files[0] : null;
+
+  const payload = {
+    bookingId: rawBooking,
+    vehicleId: vehicleSelect?.value || "",
+    vehicleName: selectedVehicle?.name || "",
+    reportedBy: reportedByRaw,
+    damageType: document.getElementById("damageType").value,
+    description: document.getElementById("damageDescription").value.trim(),
+    repairRequired: document.getElementById("damageRepairRequired").value === "true",
+    notes: document.getElementById("damageNotes").value.trim(),
+    photoName: "",
+    photoContent: ""
+  };
+
+  if(!payload.vehicleId || !reportedByRaw || !payload.damageType || !payload.description){
+    showDamageStatus("Please select a vehicle, enter who reported it, choose a damage type, and add a description.", "error");
+    return;
+  }
+
+  if(selectedPhoto && selectedPhoto.size > 7 * 1024 * 1024){
+    showDamageStatus("The selected photo is too large. Please choose a photo under 7 MB.", "error");
+    return;
+  }
+
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = selectedPhoto ? "Reading photo..." : "Submitting...";
+  }
+  showDamageStatus(selectedPhoto ? "Reading selected photo..." : "Submitting damage report...", "info");
+
+  try{
+    const photoPayload = await fileToBase64Payload(selectedPhoto);
+    payload.photoName = photoPayload.photoName;
+    payload.photoContent = photoPayload.photoContent;
+
+    if(btn) btn.textContent = "Submitting...";
+    showDamageStatus(selectedPhoto ? "Submitting damage report with photo..." : "Submitting damage report...", "info");
+
+    const response = await fetch(REPORT_DAMAGE_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if(!response.ok){
+      const responseText = await response.text().catch(() => "");
+      throw new Error(`Report Damage returned ${response.status}. ${responseText}`);
+    }
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    showDamageStatus(result.message || (selectedPhoto ? "Damage report and photo submitted successfully." : "Damage report submitted successfully."), "success");
+    resetDamageForm();
+    await loadDashboardStats();
+    await loadAdminQueue();
+    await loadDamageReports();
+  }catch(error){
+    console.error(error);
+    showDamageStatus(`Damage report could not be submitted. ${error.message || "Check the Vehicle Portal - Report Damage flow."}`, "error");
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = "Submit damage report";
+    }
+  }
+}
+
+let activeCheckOutBooking = null;
+let activeCheckInBooking = null;
+
+function showInlineError(id, message){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = message;
+  el.classList.add("show");
+}
+
+function clearInlineError(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = "";
+  el.classList.remove("show");
+}
+
+function setButtonLoading(id, loading, textWhenLoading, textNormal){
+  const btn = document.getElementById(id);
+  if(!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? textWhenLoading : textNormal;
+}
+
+function checkOutBooking(bookingId, bookingReference){
+  if(!bookingId){
+    alert("Booking ID is missing, so this booking cannot be checked out.");
+    return;
+  }
+
+  activeCheckOutBooking = { bookingId, bookingReference: bookingReference || "this booking" };
+  document.getElementById("checkOutSub").textContent = `Record the starting mileage for ${activeCheckOutBooking.bookingReference}.`;
+  document.getElementById("checkOutStartMileage").value = "";
+  clearInlineError("checkOutError");
+  document.getElementById("checkOutModal").classList.add("open");
+  setTimeout(() => document.getElementById("checkOutStartMileage")?.focus(), 50);
+}
+
+function closeCheckOutModal(){
+  document.getElementById("checkOutModal").classList.remove("open");
+  activeCheckOutBooking = null;
+  clearInlineError("checkOutError");
+  setButtonLoading("confirmCheckOutBtn", false, "Checking out...", "Confirm check out");
+}
+
+async function submitCheckOut(){
+  if(!activeCheckOutBooking) return;
+
+  const mileageInput = document.getElementById("checkOutStartMileage").value;
+  const startMileage = Number(mileageInput);
+  if(!Number.isFinite(startMileage) || startMileage < 0){
+    showInlineError("checkOutError", "Please enter a valid start mileage number.");
+    return;
+  }
+
+  clearInlineError("checkOutError");
+  setButtonLoading("confirmCheckOutBtn", true, "Checking out...", "Confirm check out");
+
+  try{
+    const response = await fetch(CHECK_OUT_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        bookingId: activeCheckOutBooking.bookingId,
+        startMileage: startMileage
+      })
+    });
+
+    if(!response.ok){
+      throw new Error(`Check Out returned ${response.status}`);
+    }
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    closeCheckOutModal();
+    alert(result.message || "Vehicle checked out successfully.");
+    await loadMyBookings();
+    await loadDashboardStats();
+    await loadCalendarBookings();
+    await loadVehicles();
+  }catch(error){
+    console.error(error);
+    showInlineError("checkOutError", "Vehicle could not be checked out. Check the Vehicle Portal - Check Out flow URL, response body and permissions.");
+    setButtonLoading("confirmCheckOutBtn", false, "Checking out...", "Confirm check out");
+  }
+}
+
+function checkInBooking(bookingId, bookingReference){
+  if(!bookingId){
+    alert("Booking ID is missing, so this booking cannot be checked in.");
+    return;
+  }
+
+  activeCheckInBooking = { bookingId, bookingReference: bookingReference || "this booking" };
+  document.getElementById("checkInSub").textContent = `Complete the return checklist for ${activeCheckInBooking.bookingReference}.`;
+  document.getElementById("checkInEndMileage").value = "";
+  document.getElementById("checkInReturnNotes").value = "";
+  document.getElementById("checkInFuelFull").checked = false;
+  document.getElementById("checkInClean").checked = false;
+  document.getElementById("checkInFuelCard").checked = false;
+  document.getElementById("checkInDamage").checked = false;
+  document.getElementById("checkInDamageNotes").value = "";
+  toggleDamageNotes();
+  clearInlineError("checkInError");
+  document.getElementById("checkInModal").classList.add("open");
+  setTimeout(() => document.getElementById("checkInEndMileage")?.focus(), 50);
+}
+
+function closeCheckInModal(){
+  document.getElementById("checkInModal").classList.remove("open");
+  activeCheckInBooking = null;
+  clearInlineError("checkInError");
+  setButtonLoading("confirmCheckInBtn", false, "Checking in...", "Confirm check in");
+}
+
+function toggleDamageNotes(){
+  const damageChecked = document.getElementById("checkInDamage")?.checked;
+  const wrap = document.getElementById("damageNotesWrap");
+  if(wrap) wrap.style.display = damageChecked ? "block" : "none";
+}
+
+async function submitCheckIn(){
+  if(!activeCheckInBooking) return;
+
+  const mileageInput = document.getElementById("checkInEndMileage").value;
+  const endMileage = Number(mileageInput);
+  if(!Number.isFinite(endMileage) || endMileage < 0){
+    showInlineError("checkInError", "Please enter a valid end mileage number.");
+    return;
+  }
+
+  const damageReported = document.getElementById("checkInDamage").checked;
+  const damageNotes = document.getElementById("checkInDamageNotes").value.trim();
+  if(damageReported && !damageNotes){
+    showInlineError("checkInError", "Please enter damage notes when damage is reported.");
+    return;
+  }
+
+  clearInlineError("checkInError");
+  setButtonLoading("confirmCheckInBtn", true, "Checking in...", "Confirm check in");
+
+  try{
+    const response = await fetch(CHECK_IN_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        bookingId: activeCheckInBooking.bookingId,
+        endMileage: endMileage,
+        fuelFullCharged: document.getElementById("checkInFuelFull").checked,
+        vehicleClean: document.getElementById("checkInClean").checked,
+        fuelCardReturned: document.getElementById("checkInFuelCard").checked,
+        damageReported: damageReported,
+        damageNotes: damageNotes,
+        returnNotes: document.getElementById("checkInReturnNotes").value.trim()
+      })
+    });
+
+    if(!response.ok){
+      throw new Error(`Check In returned ${response.status}`);
+    }
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    closeCheckInModal();
+    alert(result.message || "Vehicle checked in successfully.");
+    await loadMyBookings();
+    await loadDashboardStats();
+    await loadCalendarBookings();
+    await loadVehicles();
+  }catch(error){
+    console.error(error);
+    showInlineError("checkInError", "Vehicle could not be checked in. Check the Vehicle Portal - Check In flow URL, response body and permissions.");
+    setButtonLoading("confirmCheckInBtn", false, "Checking in...", "Confirm check in");
+  }
+}
+
+async function loadMyBookings(){
+  const list = document.getElementById("myBookingsList");
+  if(!list) return;
+
+  const driverEmail = document.getElementById("driverEmail")?.value?.trim() || "william@staffscanner.co.uk";
+  list.innerHTML = `<div class="booking-row"><div><strong>Loading bookings...</strong><span>Getting live bookings for ${driverEmail}.</span></div></div>`;
+
+  try{
+    const response = await fetch(MY_BOOKINGS_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({driverEmail})
+    });
+
+    if(!response.ok){
+      throw new Error(`My Bookings returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rows = filterAccessibleBookings(Array.isArray(data) ? data : (data.value || []));
+    myBookingsCache = rows;
+    renderMyBookings(myBookingsCache);
+  }catch(error){
+    console.error(error);
+    list.innerHTML = `<div class="booking-row"><div><strong>Could not load bookings</strong><span>Check the Vehicle Portal - My Bookings flow URL, response body and permissions.</span></div><span class="badge red">Error</span></div>`;
+  }
+}
+
+const titles = {
+  dashboard:["Fleet Dashboard","Book, approve, check out and return Staffscanner vehicles."],
+  book:["Book a Vehicle","Select a vehicle and submit a request for approval."],
+  calendar:["Fleet Calendar","View vehicle availability and upcoming reservations."],
+  mybookings:["My Bookings","Track your pending, approved and completed bookings."],
+  bus:["Bus Journeys","Record resident transport details for Silverburn bus journeys."],
+  damage:["Damage Reporting","Report vehicle damage with notes and photos."],
+  admin:["Admin Dashboard","Review approvals, incidents and usage reports."]
+};
+
+document.querySelectorAll("[data-view]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    const view = btn.dataset.view;
+    if(view === "admin" && currentUserContext && !currentUserContext.isAdmin){ alert("Admin access is not enabled for your Fleet Portal account."); return; }
+    if(view === "bus" && currentUserContext && !currentUserContext.busJourneyAccess){ alert("Bus Journey access is not enabled for your Fleet Portal account."); return; }
+    document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"));
+    document.getElementById(view).classList.remove("hidden");
+    document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(`[data-view="${view}"]`).forEach(b=>b.classList.add("active"));
+    document.getElementById("pageTitle").textContent = titles[view][0];
+    document.getElementById("pageSub").textContent = titles[view][1];
+    if(view === "dashboard") loadDashboardStats();
+    if(view === "mybookings") loadMyBookings();
+    if(view === "calendar") loadCalendarBookings();
+    if(view === "admin"){ loadAdminQueue(); loadVehicles(); loadDamageReports(); }
+    if(view === "damage"){ renderDamageVehicleOptions(); clearDamageStatus(); }
+  });
+});
+
+function showBookingStatus(message, type="info"){
+  const status = document.getElementById("bookingStatus");
+  status.className = `status-message ${type}`;
+  status.textContent = message;
+}
+
+function clearBookingStatus(){
+  const status = document.getElementById("bookingStatus");
+  status.className = "status-message";
+  status.textContent = "";
+}
+
+function getSelectedVehicleName(){
+  const select = document.getElementById("vehicleSelect");
+  return select.options[select.selectedIndex].text;
+}
+
+function openWizard(vehicleId){
+  const selectedVehicle = vehicles.find(v => v.id === Number(vehicleId));
+  if(selectedVehicle && !vehicleIsBookable(selectedVehicle)){
+    alert(`${selectedVehicle.name} is currently unavailable for booking.`);
+    return;
+  }
+  document.getElementById("wizard").classList.add("open");
+  document.getElementById("vehicleSelect").value = String(vehicleId);
+  document.getElementById("busExtra").style.display =
+    selectedVehicle && selectedVehicle.name.toLowerCase().includes("bus") ? "block" : "none";
+  clearBookingStatus();
+}
+
+function closeWizard(){
+  document.getElementById("wizard").classList.remove("open");
+  clearBookingStatus();
+}
+
+function toIsoDateTime(localDateTimeValue){
+  if(!localDateTimeValue) return "";
+  const date = new Date(localDateTimeValue);
+  return date.toISOString();
+}
+
+async function checkAvailability(payload){
+  const availabilityPayload = {
+    vehicleId: payload.vehicleId,
+    vehicleName: payload.vehicleName,
+    startDateTime: payload.startDateTime,
+    endDateTime: payload.endDateTime
+  };
+
+  const response = await fetch(CHECK_AVAILABILITY_URL, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(availabilityPayload)
+  });
+
+  if(!response.ok){
+    throw new Error(`Availability check returned ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+async function submitBooking(){
+  const btn = document.getElementById("submitBookingBtn");
+
+  const vehicleSelect = document.getElementById("vehicleSelect");
+
+  const payload = {
+    vehicleId: Number(vehicleSelect.value),
+    vehicleName: vehicleSelect.options[vehicleSelect.selectedIndex].text,
+    driverName: document.getElementById("driverName").value.trim(),
+    driverEmail: document.getElementById("driverEmail").value.trim(),
+    startDateTime: toIsoDateTime(document.getElementById("startDateTime").value),
+    endDateTime: toIsoDateTime(document.getElementById("endDateTime").value),
+    destination: document.getElementById("destination").value.trim(),
+    purpose: document.getElementById("purpose").value,
+    notes: document.getElementById("notes").value.trim()
+  };
+
+  if(!payload.vehicleId || !payload.vehicleName || !payload.driverName || !payload.driverEmail || !payload.startDateTime || !payload.endDateTime || !payload.destination || !payload.purpose){
+    showBookingStatus("Please complete all required fields before submitting.", "error");
+    return;
+  }
+
+  if(new Date(payload.endDateTime) <= new Date(payload.startDateTime)){
+    showBookingStatus("End Date/Time must be after Start Date/Time.", "error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Checking availability...";
+  showBookingStatus(`Checking ${getSelectedVehicleName()} availability...`, "info");
+
+  try{
+    const availability = await checkAvailability(payload);
+
+    if(!availability.available){
+      showBookingStatus(
+        availability.message || `${getSelectedVehicleName()} is unavailable for the selected time. Please choose another time or vehicle.`,
+        "error"
+      );
+      return;
+    }
+
+    btn.textContent = "Submitting...";
+    showBookingStatus(`${getSelectedVehicleName()} is available. Submitting booking for approval...`, "info");
+
+    const response = await fetch(POWER_AUTOMATE_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if(!response.ok){
+      throw new Error(`Power Automate returned ${response.status}`);
+    }
+
+    let result = {};
+    try { result = await response.json(); } catch(e) {}
+
+    showBookingStatus(result.message || "Booking submitted successfully. Approval workflow has started.", "success");
+    await loadMyBookings();
+    await loadDashboardStats();
+    await loadCalendarBookings();
+    await loadVehicles();
+    if(!document.getElementById("admin")?.classList.contains("hidden")) await loadAdminQueue();
+    setTimeout(closeWizard, 1800);
+  }catch(error){
+    console.error(error);
+    showBookingStatus("Booking could not be submitted. Check the Power Automate flow URL, availability flow, and permissions.", "error");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Submit for approval";
+  }
+}
+
+document.getElementById("vehicleSelect").addEventListener("change",e=>{
+  const selectedVehicle = vehicles.find(v => v.id === Number(e.target.value));
+  document.getElementById("busExtra").style.display =
+    selectedVehicle && selectedVehicle.name.toLowerCase().includes("bus") ? "block" : "none";
+});
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Enter" && document.getElementById("loginScreen")?.classList.contains("open")){
+    const active = document.activeElement;
+    if(active && active.id === "loginEmail") submitFleetLogin();
+  }
+});
+
+async function initialisePortal(fromLogin=false){
+  const email = getCurrentUserEmail();
+  if(!email){
+    showLoginScreen();
+    return;
+  }
+
+  try{
+    await loadUserContext();
+    hideLoginScreen();
+    await loadVehicles();
+    await loadDashboardStats();
+    await loadMyBookings();
+    await loadCalendarBookings();
+  }catch(error){
+    console.error(error);
+    currentUserContext = null;
+    if(fromLogin){
+      throw error;
+    }
+    showLoginScreen(error.message || "Your account could not be checked against the Fleet Portal Users list.");
+  }
+}
+
+initialisePortal();
+setInterval(() => {
+  if(currentUserContext) loadDashboardStats();
+}, 30000);
+</script>
+</body>
+</html>
