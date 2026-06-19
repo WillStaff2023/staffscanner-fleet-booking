@@ -1295,6 +1295,26 @@ function setTextValue(id, value){
   if(el) el.textContent = value === undefined || value === null || value === "" ? "-" : String(value);
 }
 
+
+function updateLocalBookingLifecycle(bookingId, lifecycleValue, extraFields = {}){
+  const id = Number(bookingId);
+  if(!id || !Array.isArray(myBookingsCache)) return;
+  const booking = myBookingsCache.find(item => Number(item.ID || item.Id || item.id || 0) === id);
+  if(!booking) return;
+
+  booking.Status = { Value: lifecycleValue };
+  booking["Status/Value"] = lifecycleValue;
+  booking.VehicleLifecycle = lifecycleValue;
+  booking.VehicleLifecycleValue = lifecycleValue;
+
+  Object.assign(booking, extraFields);
+  renderMyBookings(myBookingsCache);
+}
+
+function wait(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function pickField(item, names){
   for(const name of names){
     if(item && item[name] !== undefined && item[name] !== null && item[name] !== "") return item[name];
@@ -1598,7 +1618,9 @@ function renderAdminDashboard(bookings, vehiclesData){
     const checkIn = pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]);
     return (lifecycle.includes("returned") || lifecycle.includes("complete")) && isSameLocalDate(checkIn, now);
   });
-  const damageRows = rows.filter(item => boolField(item, ["DamageReported", "Damage_x0020_Reported", "Damage Reported"]));
+  // Damage Flagged is owned by the Vehicle Damage Reports flow, not booking rows.
+  // Do not count historic booking DamageReported flags here, as that makes the number jump whenever bookings refresh.
+  const damageRows = [];
   const lateReturns = rows.filter(item => {
     const expectedEnd = new Date(item.EndDate_x002f_Time || item.EndDateTime || item.End || "");
     const checkIn = new Date(pickField(item, ["CheckInTime", "Check_x0020_In_x0020_Time", "Check In Time"]));
@@ -1627,7 +1649,10 @@ function renderAdminDashboard(bookings, vehiclesData){
   setStatValue("adminReturnedToday", returnedToday.length);
   setStatValue("adminLateReturns", lateReturns.length);
   setTextValue("adminMonthlyMileage", monthlyMiles.toLocaleString("en-GB"));
-  setStatValue("adminDamageReports", damageRows.length);
+  // Keep the current damage count until loadDamageReports() replaces it with the live open repair count.
+  if(!Array.isArray(damageReportsCache) || !damageReportsCache.length){
+    setStatValue("adminDamageReports", 0);
+  }
   setStatValue("adminVehiclesAvailable", availableVehicles);
   setStatValue("adminFleetInUse", fleetInUse);
 
@@ -3415,8 +3440,16 @@ async function submitCheckOut(){
     let result = {};
     try { result = await response.json(); } catch(e) {}
 
+    const checkedOutTime = new Date().toISOString();
+    const checkedOutBookingId = activeCheckOutBooking?.bookingId || result.bookingId || 0;
     closeCheckOutModal();
-    showToast(result.message || "Vehicle checked out successfully.", "success", "Check out");
+    updateLocalBookingLifecycle(checkedOutBookingId, "Checked Out", {
+      MileageOut: startMileage,
+      StartMileage: startMileage,
+      CheckOutTime: checkedOutTime
+    });
+    showToast(result.message || "Vehicle checked out successfully. The booking is now ready to check in.", "success", "Check out");
+    await wait(900);
     await loadMyBookings();
     await loadDashboardStats();
     await loadCalendarBookings();
@@ -3505,8 +3538,20 @@ async function submitCheckIn(){
     let result = {};
     try { result = await response.json(); } catch(e) {}
 
+    const checkedInTime = new Date().toISOString();
+    const checkedInBookingId = activeCheckInBooking?.bookingId || result.bookingId || 0;
     closeCheckInModal();
+    updateLocalBookingLifecycle(checkedInBookingId, "Returned", {
+      MileageIn: endMileage,
+      EndMileage: endMileage,
+      CheckInTime: checkedInTime,
+      DamageReported: damageReported,
+      FuelFull_x002f_Charged: document.getElementById("checkInFuelFull").checked,
+      VehicleClean: document.getElementById("checkInClean").checked,
+      FuelCardReturned: document.getElementById("checkInFuelCard").checked
+    });
     showToast(result.message || "Vehicle checked in successfully.", "success", "Check in");
+    await wait(900);
     await loadMyBookings();
     await loadDashboardStats();
     await loadCalendarBookings();
