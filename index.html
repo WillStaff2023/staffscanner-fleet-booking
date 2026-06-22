@@ -320,6 +320,12 @@
     .toast button{border:0;background:#eef2f7;border-radius:10px;width:28px;height:28px;cursor:pointer;font-weight:900;color:#344054}
     @keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 
+  
+    .event.multi-start::after{content:" →";font-weight:950}
+    .event.multi-middle{border-left:4px solid rgba(0,147,230,.55);border-right:4px solid rgba(0,147,230,.55)}
+    .event.multi-middle::before{content:"↔ ";font-weight:950}
+    .event.multi-end::before{content:"← ";font-weight:950}
+
   </style>
 </head>
 <body>
@@ -443,7 +449,7 @@
           </label>
           <label>Status
             <select id="calendarStatusFilter" onchange="applyCalendarFilterControls()">
-              <option value="active">All except cancelled</option>
+              <option value="active">Live bookings only</option>
               <option value="pending">Pending / Requested</option>
               <option value="booked">Booked / Approved</option>
               <option value="checkedout">Checked Out</option>
@@ -455,9 +461,9 @@
           <label>Search
             <input id="calendarSearchFilter" placeholder="Driver, ref or destination" oninput="applyCalendarFilterControls()">
           </label>
-          <div class="calendar-filter-summary" id="calendarFilterSummary">Calendar shows all non-cancelled bookings you are allowed to view.</div>
+          <div class="calendar-filter-summary" id="calendarFilterSummary">Calendar shows live bookings by default. Returned and cancelled bookings can still be selected from the Status filter.</div>
         </div>
-        <div class="calendar-legend"><span><i class="dot"></i>Pending</span><span><i class="dot green"></i>Booked/Returned</span><span><i class="dot amber"></i>Checked out</span><span><i class="dot red"></i>Cancelled hidden by default</span></div>
+        <div class="calendar-legend"><span><i class="dot"></i>Pending</span><span><i class="dot green"></i>Booked</span><span><i class="dot amber"></i>Checked out</span><span><i class="dot green"></i>Returned hidden by default</span><span><i class="dot red"></i>Cancelled hidden by default</span></div>
         <div class="calendar" id="calendarGrid"></div>
       </div>
     </section>
@@ -1989,12 +1995,30 @@ function timeOnly(value){
   return d.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit", hour12:false});
 }
 
-function calendarBookingTitle(item){
+function calendarBookingTitle(item, displayDate=null){
   const vehicle = bookingVehicleName(item);
   const driver = bookingDriverName(item);
-  const start = timeOnly(item.StartDate_x002f_Time || item.StartDateTime || item.Start);
-  const end = timeOnly(item.EndDate_x002f_Time || item.EndDateTime || item.End);
+  const startValue = item.StartDate_x002f_Time || item.StartDateTime || item.Start;
+  const endValue = item.EndDate_x002f_Time || item.EndDateTime || item.End;
+  const startDate = new Date(startValue);
+  const endDate = new Date(endValue);
   const status = bookingLifecycle(item) || bookingStatus(item);
+  const start = timeOnly(startValue);
+  const end = timeOnly(endValue);
+
+  // Multi-day bookings need to show clearly on every calendar day they cover.
+  if(displayDate && !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime())){
+    const dayKey = dateKey(displayDate);
+    const startKey = dateKey(startDate);
+    const endKey = dateKey(endDate);
+    let timeRange = "All day";
+    if(dayKey === startKey && dayKey === endKey) timeRange = start && end ? `${start}-${end}` : start;
+    else if(dayKey === startKey) timeRange = `${start || "Start"} → continues`;
+    else if(dayKey === endKey) timeRange = `continues → ${end || "End"}`;
+    else timeRange = "continues all day";
+    return `${timeRange} ${vehicle} · ${driver} (${status})`;
+  }
+
   const timeRange = start && end ? `${start}-${end}` : start;
   return `${timeRange} ${vehicle} · ${driver} (${status})`;
 }
@@ -2022,9 +2046,9 @@ function calendarEventClass(item){
   return "pending";
 }
 
-function calendarEventHtml(item, index){
-  const cls = calendarEventClass(item);
-  const title = escapeHtml(calendarBookingTitle(item));
+function calendarEventHtml(item, index, displayDate=null, segmentClass=""){
+  const cls = `${calendarEventClass(item)} ${segmentClass || ""}`.trim();
+  const title = escapeHtml(calendarBookingTitle(item, displayDate));
   return `<div class="event ${cls}" onclick="openCalendarBookingDetails(${index})" title="Open booking details">${title}</div>`;
 }
 
@@ -2155,7 +2179,7 @@ function applyCalendarFilters(bookings){
     if(calendarFilters.company !== "all" && String(company).toLowerCase() !== String(calendarFilters.company).toLowerCase()) return false;
     if(calendarFilters.vehicle !== "all" && String(vehicleName).toLowerCase() !== String(calendarFilters.vehicle).toLowerCase()) return false;
 
-    if(calendarFilters.status === "active" && group === "cancelled") return false;
+    if(calendarFilters.status === "active" && (group === "cancelled" || group === "returned")) return false;
     if(calendarFilters.status !== "active" && calendarFilters.status !== "all" && group !== calendarFilters.status) return false;
 
     if(calendarFilters.search){
@@ -2178,7 +2202,7 @@ function updateCalendarFilterSummary(total, shown){
   const el = document.getElementById("calendarFilterSummary");
   if(!el) return;
   const statusText = {
-    active: "all non-cancelled statuses",
+    active: "live bookings only",
     all: "all statuses including cancelled",
     pending: "pending/requested bookings",
     booked: "booked/approved bookings",
@@ -2266,12 +2290,38 @@ function renderCalendar(bookings, gridStart, days){
   // user only sees bookings for their allowed company/companies.
   calendarBookingsCache = filterAccessibleBookings(Array.isArray(bookings) ? bookings : []);
 
+  const totalDays = days || 35;
+  const gridEnd = endOfDay(addDays(gridStart, totalDays - 1));
+
+  // Multi-day fix: add the same booking to every calendar date it overlaps,
+  // not just the start date. This makes bookings spanning 2+ days visible on
+  // each day in month, week and day views.
   calendarBookingsCache.forEach((item, index) => {
     const startValue = item.StartDate_x002f_Time || item.StartDateTime || item.Start;
-    const key = eventDateKey(startValue);
-    if(!key) return;
-    if(!grouped[key]) grouped[key] = [];
-    grouped[key].push({item, index});
+    const endValue = item.EndDate_x002f_Time || item.EndDateTime || item.End || startValue;
+    const bookingStart = new Date(startValue);
+    const bookingEnd = new Date(endValue);
+    if(Number.isNaN(bookingStart.getTime())) return;
+    const safeEnd = Number.isNaN(bookingEnd.getTime()) ? bookingStart : bookingEnd;
+
+    const firstVisibleDay = startOfDay(bookingStart > gridStart ? bookingStart : gridStart);
+    const lastVisibleDay = startOfDay(safeEnd < gridEnd ? safeEnd : gridEnd);
+
+    for(let d = new Date(firstVisibleDay); d <= lastVisibleDay; d = addDays(d, 1)){
+      const key = dateKey(d);
+      if(!key) continue;
+      if(!grouped[key]) grouped[key] = [];
+      const startKey = dateKey(bookingStart);
+      const endKey = dateKey(safeEnd);
+      const dayKey = dateKey(d);
+      let segmentClass = "";
+      if(startKey !== endKey){
+        if(dayKey === startKey) segmentClass = "multi-start";
+        else if(dayKey === endKey) segmentClass = "multi-end";
+        else segmentClass = "multi-middle";
+      }
+      grouped[key].push({item, index, displayDate: new Date(d), segmentClass});
+    }
   });
 
   const weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -2284,7 +2334,6 @@ function renderCalendar(bookings, gridStart, days){
   }
 
   const todayKey = dateKey(new Date());
-  const totalDays = days || 35;
   const currentMonth = currentCalendarViewDate.getMonth();
 
   for(let i=0;i<totalDays;i++){
@@ -2293,7 +2342,7 @@ function renderCalendar(bookings, gridStart, days){
     const dayBookings = grouped[key] || [];
     dayBookings.sort((a,b) => new Date(a.item.StartDate_x002f_Time || a.item.StartDateTime || a.item.Start || "") - new Date(b.item.StartDate_x002f_Time || b.item.StartDateTime || b.item.Start || ""));
     const maxEvents = currentCalendarMode === "day" ? 20 : 4;
-    const events = dayBookings.slice(0,maxEvents).map(({item,index}) => calendarEventHtml(item, index)).join("");
+    const events = dayBookings.slice(0,maxEvents).map(({item,index,displayDate,segmentClass}) => calendarEventHtml(item, index, displayDate, segmentClass)).join("");
     const more = dayBookings.length > maxEvents ? `<div class="event" onclick="showToast('${dayBookings.length - maxEvents} more bookings on this day. Use the filters or open SharePoint for the full list.', 'info', 'Calendar')">+${dayBookings.length - maxEvents} more</div>` : "";
     const todayStyle = key === todayKey ? 'outline:2px solid var(--blue);' : "";
     const mutedStyle = currentCalendarMode === "month" && d.getMonth() !== currentMonth ? 'opacity:.45;' : "";
