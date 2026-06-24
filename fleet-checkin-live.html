@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Staffscanner Fleet Check In / Out</title>
+  <style>
+    :root{
+      --blue:#0098e8; --blue-dark:#006fd6; --blue-soft:#d1edfd;
+      --text:#102033; --muted:#667085; --line:#e6eef5;
+      --green:#14a44d; --amber:#f59e0b; --red:#dc2626; --dark:#071827;
+      --shadow:0 24px 70px rgba(12,45,75,.14); --radius:26px;
+    }
+    *{box-sizing:border-box}
+    html{min-height:100%;background:#eef6fb}
+    body{
+      margin:0; min-height:100vh; font-family:Inter,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+      background:radial-gradient(circle at top left, rgba(0,152,232,.22), transparent 35%),
+                 radial-gradient(circle at bottom right, rgba(0,111,214,.16), transparent 38%),
+                 linear-gradient(180deg,#f7fbff,#eef6fb);
+    }
+    .shell{width:min(540px,100%);margin:0 auto;padding:18px 16px 34px;}
+    .hero{padding-top:env(safe-area-inset-top);display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 14px;}
+    .brand{display:flex;align-items:center;gap:11px;min-width:0}
+    .mark{width:46px;height:46px;border-radius:17px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:grid;place-items:center;color:#fff;font-size:23px;font-weight:950;box-shadow:0 16px 32px rgba(0,152,232,.25)}
+    .brand h1{font-size:18px;line-height:1.1;margin:0;letter-spacing:-.03em}.brand span{display:block;font-size:12px;color:var(--muted);font-weight:750;margin-top:3px}
+    .chip{border:1px solid var(--line);background:rgba(255,255,255,.84);padding:8px 11px;border-radius:999px;font-size:12px;font-weight:900;color:#005c9c;white-space:nowrap;box-shadow:0 8px 22px rgba(12,45,75,.07)}
+    .card{background:rgba(255,255,255,.92);backdrop-filter:blur(18px);border:1px solid rgba(230,238,245,.95);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin:14px 0;}
+    .card h2{margin:0 0 8px;font-size:28px;letter-spacing:-.05em}.card h3{margin:0 0 10px;font-size:18px;letter-spacing:-.02em}.card p{color:var(--muted);line-height:1.45;margin:7px 0 14px}
+    label{display:block;font-size:13px;font-weight:950;color:#344054;margin:12px 0 0}
+    input,textarea{width:100%;margin-top:7px;border:1px solid #d8e1ea;border-radius:16px;padding:14px 14px;font:inherit;background:#fff;font-size:16px;outline:none;}
+    input:focus,textarea:focus{border-color:rgba(0,152,232,.9);box-shadow:0 0 0 4px rgba(0,152,232,.12)}
+    textarea{min-height:92px;resize:vertical}.hidden{display:none!important}
+    .btn{border:0;border-radius:17px;padding:14px 16px;font-weight:950;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;box-shadow:0 14px 28px rgba(0,152,232,.24);font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;}
+    .btn.secondary{background:#f1f5f9;color:#213047;box-shadow:none}.btn.danger{background:#fee2e2;color:#991b1b;box-shadow:none}.btn:disabled{background:#e5e7eb!important;color:#667085!important;box-shadow:none!important;cursor:not-allowed}
+    .row{display:flex;gap:10px}.row>*{flex:1}.stack{display:grid;gap:10px}.divider{height:1px;background:var(--line);margin:16px 0}.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:950}.green{background:#dcfce7;color:#166534}.amber{background:#fef3c7;color:#92400e}.red{background:#fee2e2;color:#991b1b}.blue{background:#dbeafe;color:#1d4ed8}.dark{background:#e2e8f0;color:#334155}
+    .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.tile{background:#f8fbff;border:1px solid var(--line);border-radius:17px;padding:12px;min-width:0}.tile strong{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px}.tile span{font-weight:900;word-break:break-word}.tile.full{grid-column:1/-1}
+    .booking-card{border:1px solid var(--line);background:#fff;border-radius:20px;padding:14px;margin-top:10px}.booking-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.booking-title{font-weight:950;font-size:17px;line-height:1.2}.booking-sub{font-size:13px;color:var(--muted);line-height:1.38;margin-top:4px}.booking-actions{display:flex;gap:8px;margin-top:12px}.booking-actions .btn{padding:11px 12px;border-radius:14px;font-size:13px}
+    .checks{display:grid;gap:10px;margin-top:10px}.check{display:flex;gap:10px;align-items:flex-start;border:1px solid #d8e1ea;background:#fff;border-radius:16px;padding:13px;font-weight:850;color:#344054}.check input{width:auto;margin:2px 0 0;accent-color:var(--blue)}
+    .message{display:none;border-radius:16px;padding:13px 14px;margin-top:13px;font-size:13px;font-weight:850;line-height:1.35}.message.show{display:block}.message.info{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}.message.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}.message.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.message.warning{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+    .top-actions{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:14px}.top-actions .btn{width:auto;min-width:0;padding:11px 13px;font-size:13px}
+    .current-user{font-size:12px;color:var(--muted);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}.empty-icon{font-size:42px;line-height:1;margin-bottom:8px}.footer-note{text-align:center;color:var(--muted);font-size:12px;line-height:1.4;margin-top:12px}.pulse{animation:pulse 1.1s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+    .qr-card{border:1px solid rgba(0,152,232,.22);background:linear-gradient(145deg,rgba(209,237,253,.75),rgba(255,255,255,.94))}
+    .qr-mini{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;font-weight:800;line-height:1.35}
+    .qr-dot{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--dark),#1e3a5f);display:grid;place-items:center;color:#fff;font-size:20px;flex:0 0 auto}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(7,24,39,.58);z-index:80;display:none;place-items:end center;padding:16px}
+    .modal-backdrop.open{display:grid}
+    .sheet{width:min(540px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:28px;padding:18px;box-shadow:0 40px 100px rgba(0,0,0,.28)}
+    .sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+    .sheet-head h3{margin:0;font-size:22px;letter-spacing:-.04em}.sheet-head p{margin:5px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+    .close-btn{border:0;background:#eef2f7;border-radius:14px;width:42px;height:42px;font-size:22px;font-weight:900;cursor:pointer;color:#344054}
+    .scanner-box{border:1px solid var(--line);background:#071827;border-radius:22px;overflow:hidden;min-height:260px;display:grid;place-items:center;color:#dbeafe;text-align:center}
+    .scanner-box video{width:100%;height:auto;display:block}
+    .qr-fields{display:grid;gap:2px}.qr-fields .checks{margin-top:4px}
+    @media(max-width:420px){.summary{grid-template-columns:1fr}.row{display:grid}.card{padding:18px}.card h2{font-size:25px}.booking-actions{display:grid}.top-actions{display:grid}.top-actions .btn{width:100%}.chip{display:none}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="brand"><div class="mark">🚗</div><div><h1>Fleet Check In / Out</h1><span>Staffscanner vehicle portal</span></div></div>
+      <span class="chip">Mobile quick app</span>
+    </header>
+
+    <section class="card" id="loginCard">
+      <h2>Quick access</h2>
+      <p>Enter your work email once. This device will remember it and load your current approved vehicle booking automatically.</p>
+      <label for="loginEmail">Work email</label>
+      <input id="loginEmail" type="email" autocomplete="email" placeholder="your@email.com" />
+      <button class="btn" id="loginBtn" onclick="loginAndLoad()">Continue</button>
+      <div class="message error" id="loginMsg"></div>
+    </section>
+
+    <section class="card hidden" id="appCard">
+      <div class="booking-head">
+        <div>
+          <h2 style="margin-bottom:2px">Current booking</h2>
+          <div class="current-user" id="userLine"></div>
+        </div>
+        <span class="badge blue" id="accessBadge">Signed in</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn secondary" onclick="loadBookings()">Refresh</button>
+        <button class="btn secondary" onclick="startQrScanner()">Scan QR</button>
+        <button class="btn danger" onclick="switchUser()">Change email</button>
+      </div>
+      <div class="message info show" id="statusMsg">Loading your bookings...</div>
+    </section>
+
+    <section class="card hidden" id="bookingSummaryCard">
+      <div class="booking-head">
+        <div><div class="booking-title" id="summaryTitle">Vehicle</div><div class="booking-sub" id="summarySub"></div></div>
+        <span class="badge" id="summaryBadge">Status</span>
+      </div>
+      <div class="summary" id="summaryGrid"></div>
+    </section>
+
+    <section class="card qr-card hidden" id="qrOptionCard">
+      <div class="qr-mini"><div class="qr-dot">▦</div><div><strong>QR quick action</strong><br>Scan the vehicle QR code or use the printed QR with your phone camera. It will check out if the booking is ready, or check in if it is already checked out.</div></div>
+      <button class="btn" style="margin-top:14px" onclick="startQrScanner()">Scan vehicle QR code</button>
+    </section>
+
+    <section class="card hidden" id="checkOutCard">
+      <h3>Check out vehicle</h3>
+      <p>Complete this when collecting the vehicle. The mileage will update the live booking through your existing Check Out flow.</p>
+      <label for="startMileage">Start mileage</label>
+      <input id="startMileage" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter current mileage" />
+      <button class="btn" id="checkOutBtn" onclick="submitCheckOut()">Check out vehicle</button>
+      <div class="message error" id="checkOutMsg"></div>
+    </section>
+
+    <section class="card hidden" id="checkInCard">
+      <h3>Check vehicle back in</h3>
+      <p>Complete this when returning the vehicle. Damage notes are required if damage is reported.</p>
+      <label for="endMileage">End mileage</label>
+      <input id="endMileage" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter return mileage" />
+      <label for="returnNotes">Return notes</label>
+      <textarea id="returnNotes" placeholder="Optional notes"></textarea>
+      <div class="checks">
+        <label class="check"><input id="fuelFullCharged" type="checkbox" /> Fuel full / charged</label>
+        <label class="check"><input id="vehicleClean" type="checkbox" /> Vehicle clean</label>
+        <label class="check"><input id="fuelCardReturned" type="checkbox" /> Fuel card returned</label>
+        <label class="check"><input id="damageReported" type="checkbox" onchange="toggleDamageNotes()" /> Damage reported</label>
+      </div>
+      <div id="damageWrap" class="hidden">
+        <label for="damageNotes">Damage notes</label>
+        <textarea id="damageNotes" placeholder="Describe the damage, location on vehicle, and what happened"></textarea>
+      </div>
+      <button class="btn" id="checkInBtn" onclick="submitCheckIn()">Check vehicle back in</button>
+      <div class="message error" id="checkInMsg"></div>
+    </section>
+
+    <section class="card hidden" id="allBookingsCard">
+      <h3>Other bookings</h3>
+      <div id="bookingList" class="stack"></div>
+    </section>
+
+
+    <div class="modal-backdrop" id="scannerModal" onclick="if(event.target.id==='scannerModal') closeScanner()">
+      <div class="sheet">
+        <div class="sheet-head"><div><h3>Scan vehicle QR</h3><p>Allow camera access, then point your phone at the Fleet Check In / Out QR code.</p></div><button class="close-btn" onclick="closeScanner()">×</button></div>
+        <div class="scanner-box" id="scannerBox"><div><strong>Camera loading...</strong><br><span style="font-size:13px;color:#9fb4cc">The browser may ask for camera permission.</span></div></div>
+        <div class="message info show" id="scannerMsg">Waiting for QR scan.</div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="qrActionModal" onclick="if(event.target.id==='qrActionModal') closeQrAction()">
+      <div class="sheet">
+        <div class="sheet-head"><div><h3 id="qrActionTitle">QR action</h3><p id="qrActionSub">Complete the quick fields below.</p></div><button class="close-btn" onclick="closeQrAction()">×</button></div>
+        <div class="booking-card" id="qrBookingInfo"></div>
+        <div class="qr-fields" id="qrCheckoutFields">
+          <label for="qrStartMileage">Start mileage</label>
+          <input id="qrStartMileage" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter current mileage" />
+        </div>
+        <div class="qr-fields hidden" id="qrCheckinFields">
+          <label for="qrEndMileage">End mileage</label>
+          <input id="qrEndMileage" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter return mileage" />
+          <label for="qrReturnNotes">Return notes</label>
+          <textarea id="qrReturnNotes" placeholder="Optional notes"></textarea>
+          <div class="checks">
+            <label class="check"><input id="qrFuelFullCharged" type="checkbox" /> Fuel full / charged</label>
+            <label class="check"><input id="qrVehicleClean" type="checkbox" /> Vehicle clean</label>
+            <label class="check"><input id="qrFuelCardReturned" type="checkbox" /> Fuel card returned</label>
+            <label class="check"><input id="qrDamageReported" type="checkbox" onchange="toggleQrDamageNotes()" /> Damage reported</label>
+          </div>
+          <div id="qrDamageWrap" class="hidden">
+            <label for="qrDamageNotes">Damage notes</label>
+            <textarea id="qrDamageNotes" placeholder="Describe the damage, location on vehicle, and what happened"></textarea>
+          </div>
+        </div>
+        <button class="btn" id="qrActionBtn" onclick="submitQrAction()">Confirm</button>
+        <div class="message error" id="qrActionMsg"></div>
+      </div>
+    </div>
+
+    <div class="footer-note">Uses the same live Power Automate URLs as the main Fleet Booking Portal.</div>
+  </div>
+
+<script>
+const MY_BOOKINGS_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/287e1973434c46d78959b25f1f91909f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0ItuNsJXmXJg8OiYeheeqeu6hIx9CNf_2l0f-fhzCJw";
+const CHECK_OUT_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/35f9190ae2a9495cad0ee7041940996d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=7FP-M3yvlYLGdGsiT4Vv96U9pp3sIYFM4Vz2tyPCub0";
+const CHECK_IN_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/010a450d7942497ab3555456aaf7b7d7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=x-tkGeby7OWvdd_ijoo-0kEyvXM2umDEnQLBmsgF1BY";
+const USER_CONTEXT_URL = "https://default3595aeccdecc45429c69955f0a059c.9b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8020961126d04e4abe91f1c5498890bc/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=P9TlgZUt7XlE0wiIYGj85rCAr3O3-zcXm000QcTaVgk";
+
+const LOGIN_STORAGE_KEY = "staffscannerFleetPortalEmail";
+let currentUser = null;
+let bookings = [];
+let activeBooking = null;
+let qrScannerStream = null;
+let qrScannerLoop = null;
+let qrActionMode = null;
+let lastScannedQr = "";
+let pendingQrAutoOpen = false;
+
+function qs(id){ return document.getElementById(id); }
+function show(el){ qs(el)?.classList.remove("hidden"); }
+function hide(el){ qs(el)?.classList.add("hidden"); }
+function setMsg(id, text, type="info"){
+  const el = qs(id); if(!el) return;
+  el.textContent = text || "";
+  el.className = `message ${type} ${text ? "show" : ""}`;
+}
+function setLoading(btnId, loading, loadingText, normalText){
+  const btn = qs(btnId); if(!btn) return;
+  btn.disabled = loading; btn.textContent = loading ? loadingText : normalText;
+  btn.classList.toggle("pulse", loading);
+}
+function getStoredEmail(){ try{return localStorage.getItem(LOGIN_STORAGE_KEY) || "";}catch(e){return "";} }
+function saveStoredEmail(email){ try{localStorage.setItem(LOGIN_STORAGE_KEY, email);}catch(e){} }
+function clearStoredEmail(){ try{localStorage.removeItem(LOGIN_STORAGE_KEY);}catch(e){} }
+function getUrlEmail(){ try{const p=new URLSearchParams(location.search); return (p.get("userEmail") || p.get("user") || "").trim().toLowerCase();}catch(e){return "";} }
+function currentEmail(){ return (getUrlEmail() || getStoredEmail() || "").trim().toLowerCase(); }
+function escapeHtml(v){ return String(v ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
+function pick(item, names){ for(const n of names){ if(item && item[n] !== undefined && item[n] !== null && item[n] !== "") return item[n]; } return ""; }
+function asBool(v){ return v === true || String(v).toLowerCase() === "true" || String(v).toLowerCase() === "yes"; }
+function bookingId(b){ return Number(pick(b,["ID","Id","id","BookingID","BookingId"]) || 0); }
+function bookingRef(b){ return pick(b,["BookingReference","Booking_x0020_Reference","Reference","Title"]) || `Booking ${bookingId(b) || ""}`; }
+function vehicleName(b){
+  const vehicle = pick(b,["Vehicle","VehicleName","Vehicle_x0020_Name"]);
+  if(vehicle && typeof vehicle === "object") return vehicle.Value || vehicle.Title || vehicle.LookupValue || "Vehicle";
+  return vehicle || "Vehicle";
+}
+function driverName(b){ return pick(b,["DriverName","Driver_x0020_Name","DriverName0","Driver/DisplayName"]) || currentUser?.displayName || currentEmail(); }
+function approvalStatus(b){ return String(pick(b,["ApprovalStatus","Approval_x0020_Status","Status"]) || "").trim(); }
+function lifecycle(b){ return String(pick(b,["VehicleJourneyStatus","JourneyStatus","LifecycleStatus","BookingLifecycle","Booking_x0020_Lifecycle"]) || "").trim(); }
+function checkoutTime(b){ return pick(b,["CheckOutTime","Check_x0020_Out_x0020_Time","Check Out Time"]); }
+function checkinTime(b){ return pick(b,["CheckInTime","Check_x0020_In_x0020_Time","Check In Time"]); }
+function startMileage(b){ return pick(b,["StartMileage","MileageOut","Start_x0020_Mileage","Start Mileage"]); }
+function endMileage(b){ return pick(b,["EndMileage","MileageIn","End_x0020_Mileage","End Mileage"]); }
+function startDate(b){ return pick(b,["StartDate_x002f_Time","StartDateTime","Start"]); }
+function endDate(b){ return pick(b,["EndDate_x002f_Time","EndDateTime","End"]); }
+function destination(b){ return pick(b,["Destination"]); }
+function purpose(b){ return pick(b,["Purpose"]); }
+function fmtDate(v){
+  if(!v) return "-"; const d = new Date(v); if(Number.isNaN(d.getTime())) return String(v);
+  return d.toLocaleString("en-GB", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+function isApproved(b){
+  const text = `${approvalStatus(b)} ${lifecycle(b)}`.toLowerCase();
+  return text.includes("approved") || text.includes("booked") || text.includes("checked out") || text.includes("in use");
+}
+function isCheckedOut(b){ return Boolean(checkoutTime(b)) || lifecycle(b).toLowerCase().includes("checked out") || lifecycle(b).toLowerCase().includes("in use"); }
+function isCheckedIn(b){ return Boolean(checkinTime(b)) || lifecycle(b).toLowerCase().includes("returned") || lifecycle(b).toLowerCase().includes("complete"); }
+function canCheckOut(b){ return bookingId(b) && isApproved(b) && !isCheckedOut(b) && !isCheckedIn(b); }
+function canCheckIn(b){ return bookingId(b) && isApproved(b) && isCheckedOut(b) && !isCheckedIn(b); }
+function badgeFor(b){
+  if(isCheckedIn(b)) return {text:"Returned", cls:"green"};
+  if(canCheckIn(b)) return {text:"Checked out", cls:"amber"};
+  if(canCheckOut(b)) return {text:"Ready", cls:"blue"};
+  if(isApproved(b)) return {text:"Approved", cls:"blue"};
+  const s = approvalStatus(b) || lifecycle(b) || "Status";
+  return {text:s, cls:s.toLowerCase().includes("reject") || s.toLowerCase().includes("cancel") ? "red" : "dark"};
+}
+
+async function loginAndLoad(){
+  const email = qs("loginEmail").value.trim().toLowerCase();
+  if(!email || !email.includes("@")){ setMsg("loginMsg", "Please enter a valid work email address.", "error"); return; }
+  saveStoredEmail(email); setMsg("loginMsg", ""); setLoading("loginBtn", true, "Checking access...", "Continue");
+  try{ await loadUserContext(); await startApp(); if(shouldAutoQrOpen()){ setTimeout(()=>openQrSmartAction("link", "SS-FLEET-CHECKIN"), 350); } }
+  catch(e){ console.error(e); setMsg("loginMsg", e.message || "Could not check your access.", "error"); }
+  finally{ setLoading("loginBtn", false, "Checking access...", "Continue"); }
+}
+async function loadUserContext(){
+  const email = currentEmail(); if(!email) throw new Error("No email has been set.");
+  const res = await fetch(USER_CONTEXT_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({userEmail:email})});
+  let data={}; try{data=await res.json();}catch(e){}
+  if(!res.ok || data.success === false) throw new Error(data.message || `User Context returned ${res.status}`);
+  currentUser = {displayName:data.displayName || email, email:data.email || email, active: data.active !== false};
+}
+async function startApp(){
+  hide("loginCard"); show("appCard");
+  qs("userLine").textContent = `${currentUser?.displayName || currentEmail()} · ${currentUser?.email || currentEmail()}`;
+  await loadBookings();
+}
+function switchUser(){ clearStoredEmail(); currentUser=null; bookings=[]; activeBooking=null; hide("appCard"); hide("bookingSummaryCard"); hide("qrOptionCard"); hide("checkOutCard"); hide("checkInCard"); hide("allBookingsCard"); show("loginCard"); qs("loginEmail").value=""; setMsg("loginMsg","Enter another work email to switch user.","info"); }
+
+async function loadBookings(){
+  const email = currentEmail();
+  setMsg("statusMsg", `Loading live bookings for ${email}...`, "info");
+  hide("bookingSummaryCard"); hide("qrOptionCard"); hide("checkOutCard"); hide("checkInCard"); hide("allBookingsCard");
+  try{
+    const res = await fetch(MY_BOOKINGS_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({driverEmail:email})});
+    let data={}; try{data=await res.json();}catch(e){}
+    if(!res.ok) throw new Error(`My Bookings returned ${res.status}`);
+    bookings = Array.isArray(data) ? data : (Array.isArray(data.value) ? data.value : []);
+    const actionable = bookings.filter(b => canCheckIn(b) || canCheckOut(b));
+    activeBooking = actionable[0] || bookings.find(isApproved) || bookings[0] || null;
+    render();
+  }catch(e){ console.error(e); setMsg("statusMsg", "Could not load bookings. Check the My Bookings flow URL, response body and permissions.", "error"); }
+}
+function render(){
+  if(!bookings.length){
+    setMsg("statusMsg", "No vehicle bookings were found for this email.", "warning");
+    return;
+  }
+  if(!activeBooking){ setMsg("statusMsg", "No current booking is available.", "warning"); return; }
+  setMsg("statusMsg", "");
+  renderSummary(activeBooking);
+  renderAction(activeBooking);
+  renderList(bookings);
+}
+function renderSummary(b){
+  show("bookingSummaryCard");
+  show("qrOptionCard");
+  const badge = badgeFor(b);
+  qs("summaryTitle").textContent = `${vehicleName(b)} · ${bookingRef(b)}`;
+  qs("summarySub").textContent = `${driverName(b)}${destination(b) ? " · " + destination(b) : ""}`;
+  qs("summaryBadge").textContent = badge.text;
+  qs("summaryBadge").className = `badge ${badge.cls}`;
+  qs("summaryGrid").innerHTML = `
+    <div class="tile"><strong>Start</strong><span>${escapeHtml(fmtDate(startDate(b)))}</span></div>
+    <div class="tile"><strong>End</strong><span>${escapeHtml(fmtDate(endDate(b)))}</span></div>
+    <div class="tile"><strong>Destination</strong><span>${escapeHtml(destination(b) || "-")}</span></div>
+    <div class="tile"><strong>Purpose</strong><span>${escapeHtml(purpose(b) || "-")}</span></div>
+    <div class="tile"><strong>Start mileage</strong><span>${escapeHtml(startMileage(b) || "-")}</span></div>
+    <div class="tile"><strong>End mileage</strong><span>${escapeHtml(endMileage(b) || "-")}</span></div>
+    <div class="tile"><strong>Check out</strong><span>${escapeHtml(fmtDate(checkoutTime(b)))}</span></div>
+    <div class="tile"><strong>Check in</strong><span>${escapeHtml(fmtDate(checkinTime(b)))}</span></div>`;
+}
+function renderAction(b){
+  hide("checkOutCard"); hide("checkInCard");
+  if(canCheckOut(b)){ show("checkOutCard"); qs("startMileage").value = startMileage(b) || ""; qs("startMileage").focus(); }
+  else if(canCheckIn(b)){ show("checkInCard"); qs("endMileage").value = endMileage(b) || ""; }
+  else if(isCheckedIn(b)){ setMsg("statusMsg", "This booking has already been returned. No action is needed.", "success"); }
+  else { setMsg("statusMsg", "This booking is not ready for check out/check in yet.", "warning"); }
+}
+function renderList(rows){
+  if(rows.length <= 1) return;
+  show("allBookingsCard");
+  qs("bookingList").innerHTML = rows.map((b, i) => {
+    const badge = badgeFor(b); const id = bookingId(b);
+    return `<div class="booking-card"><div class="booking-head"><div><div class="booking-title">${escapeHtml(vehicleName(b))} · ${escapeHtml(bookingRef(b))}</div><div class="booking-sub">${escapeHtml(fmtDate(startDate(b)))} - ${escapeHtml(fmtDate(endDate(b)))}${destination(b) ? " · " + escapeHtml(destination(b)) : ""}</div></div><span class="badge ${badge.cls}">${escapeHtml(badge.text)}</span></div><div class="booking-actions"><button class="btn secondary" onclick="selectBooking(${i})">Open</button>${canCheckOut(b)||canCheckIn(b) ? `<button class="btn" onclick="selectBooking(${i})">${canCheckIn(b) ? "Check in" : "Check out"}</button>` : ""}</div></div>`;
+  }).join("");
+}
+function selectBooking(i){ activeBooking = bookings[i]; renderSummary(activeBooking); renderAction(activeBooking); window.scrollTo({top:0,behavior:"smooth"}); }
+function updateLocal(id, fields){
+  bookings = bookings.map(b => bookingId(b) === Number(id) ? {...b, ...fields} : b);
+  activeBooking = bookings.find(b => bookingId(b) === Number(id)) || activeBooking;
+  render();
+}
+
+async function submitCheckOut(){
+  if(!activeBooking) return;
+  const mileage = Number(qs("startMileage").value);
+  if(!Number.isFinite(mileage) || mileage < 0){ setMsg("checkOutMsg", "Please enter a valid start mileage number.", "error"); return; }
+  setMsg("checkOutMsg", ""); setLoading("checkOutBtn", true, "Checking out...", "Check out vehicle");
+  try{
+    const id = bookingId(activeBooking);
+    const res = await fetch(CHECK_OUT_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({bookingId:id, startMileage:mileage})});
+    let result={}; try{result=await res.json();}catch(e){}
+    if(!res.ok) throw new Error(`Check Out returned ${res.status}`);
+    updateLocal(id, {StartMileage:mileage, MileageOut:mileage, CheckOutTime:new Date().toISOString(), VehicleJourneyStatus:"Checked Out"});
+    setMsg("statusMsg", result.message || "Vehicle checked out successfully. You can now check it back in when returned.", "success");
+  }catch(e){ console.error(e); setMsg("checkOutMsg", "Vehicle could not be checked out. Check the Vehicle Portal - Check Out flow URL, response body and permissions.", "error"); }
+  finally{ setLoading("checkOutBtn", false, "Checking out...", "Check out vehicle"); }
+}
+function toggleDamageNotes(){ qs("damageWrap").classList.toggle("hidden", !qs("damageReported").checked); }
+async function submitCheckIn(){
+  if(!activeBooking) return;
+  const mileage = Number(qs("endMileage").value);
+  if(!Number.isFinite(mileage) || mileage < 0){ setMsg("checkInMsg", "Please enter a valid end mileage number.", "error"); return; }
+  const damage = qs("damageReported").checked;
+  const damageNotes = qs("damageNotes").value.trim();
+  if(damage && !damageNotes){ setMsg("checkInMsg", "Please enter damage notes when damage is reported.", "error"); return; }
+  setMsg("checkInMsg", ""); setLoading("checkInBtn", true, "Checking in...", "Check vehicle back in");
+  try{
+    const id = bookingId(activeBooking);
+    const payload = {
+      bookingId:id,
+      endMileage:mileage,
+      fuelFullCharged:qs("fuelFullCharged").checked,
+      vehicleClean:qs("vehicleClean").checked,
+      fuelCardReturned:qs("fuelCardReturned").checked,
+      damageReported:damage,
+      damageNotes:damageNotes,
+      returnNotes:qs("returnNotes").value.trim()
+    };
+    const res = await fetch(CHECK_IN_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+    let result={}; try{result=await res.json();}catch(e){}
+    if(!res.ok) throw new Error(`Check In returned ${res.status}`);
+    updateLocal(id, {EndMileage:mileage, MileageIn:mileage, CheckInTime:new Date().toISOString(), VehicleJourneyStatus:"Returned", DamageReported:damage, FuelFullCharged:payload.fuelFullCharged, VehicleClean:payload.vehicleClean, FuelCardReturned:payload.fuelCardReturned});
+    setMsg("statusMsg", result.message || "Vehicle checked in successfully.", "success");
+  }catch(e){ console.error(e); setMsg("checkInMsg", "Vehicle could not be checked in. Check the Vehicle Portal - Check In flow URL, response body and permissions.", "error"); }
+  finally{ setLoading("checkInBtn", false, "Checking in...", "Check vehicle back in"); }
+}
+
+
+function isFleetQrText(text){
+  const v = String(text || "").toLowerCase();
+  return v.includes("ss-fleet-checkin") || v.includes("fleet-checkin") || v.includes("staffscanner-fleet-booking");
+}
+function shouldAutoQrOpen(){
+  try{
+    const p = new URLSearchParams(location.search || "");
+    const qr = p.get("qr") || p.get("scan") || "";
+    return String(qr).toLowerCase().includes("ss-fleet-checkin") || qr === "1";
+  }catch(e){ return false; }
+}
+function buildQrBookingHtml(b){
+  const badge = badgeFor(b);
+  return `<div class="booking-head"><div><div class="booking-title">${escapeHtml(vehicleName(b))} · ${escapeHtml(bookingRef(b))}</div><div class="booking-sub">${escapeHtml(fmtDate(startDate(b)))} - ${escapeHtml(fmtDate(endDate(b)))}${destination(b) ? " · " + escapeHtml(destination(b)) : ""}</div></div><span class="badge ${badge.cls}">${escapeHtml(badge.text)}</span></div>`;
+}
+async function startQrScanner(){
+  if(!activeBooking){ setMsg("statusMsg", "Load your current booking before using QR scan.", "warning"); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ setMsg("statusMsg", "This browser does not allow camera scanning. Use the phone camera to scan the printed QR code instead.", "warning"); return; }
+  if(!("BarcodeDetector" in window)){
+    setMsg("statusMsg", "This browser does not support built-in QR scanning. Use Chrome/Edge on Android, or scan the printed QR using the phone camera so it opens this page.", "warning");
+    return;
+  }
+  showScannerModal();
+  try{
+    qrScannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}, audio:false});
+    const video = document.createElement("video");
+    video.setAttribute("playsinline", "true");
+    video.muted = true;
+    video.srcObject = qrScannerStream;
+    qs("scannerBox").innerHTML = "";
+    qs("scannerBox").appendChild(video);
+    await video.play();
+    const detector = new BarcodeDetector({formats:["qr_code"]});
+    const scan = async () => {
+      if(!qrScannerStream) return;
+      try{
+        const codes = await detector.detect(video);
+        if(codes && codes.length){
+          const value = codes[0].rawValue || "";
+          if(isFleetQrText(value)){
+            lastScannedQr = value;
+            closeScanner();
+            openQrSmartAction("scanner", value);
+            return;
+          }
+          setMsg("scannerMsg", "QR scanned, but it is not the Fleet Check In / Out code.", "warning");
+        }
+      }catch(e){ console.error(e); }
+      qrScannerLoop = requestAnimationFrame(scan);
+    };
+    setMsg("scannerMsg", "Point the camera at the Fleet Check In / Out QR code.", "info");
+    scan();
+  }catch(e){
+    console.error(e);
+    setMsg("scannerMsg", "Camera could not be opened. Check browser permission, use HTTPS, or scan the QR with the phone camera.", "error");
+  }
+}
+function showScannerModal(){ qs("scannerModal").classList.add("open"); setMsg("scannerMsg", "Waiting for camera permission.", "info"); }
+function closeScanner(){
+  if(qrScannerLoop){ cancelAnimationFrame(qrScannerLoop); qrScannerLoop = null; }
+  if(qrScannerStream){ qrScannerStream.getTracks().forEach(t => t.stop()); qrScannerStream = null; }
+  qs("scannerModal").classList.remove("open");
+}
+function openQrSmartAction(source="link", scannedText=""){
+  if(!activeBooking){ setMsg("statusMsg", "No current booking is loaded for QR action.", "warning"); return; }
+  lastScannedQr = scannedText || lastScannedQr || "SS-FLEET-CHECKIN";
+  qs("qrActionMsg").className = "message error";
+  qs("qrActionMsg").textContent = "";
+  qs("qrBookingInfo").innerHTML = buildQrBookingHtml(activeBooking);
+  hide("qrCheckoutFields"); hide("qrCheckinFields");
+  qs("qrActionBtn").disabled = false;
+  if(canCheckOut(activeBooking)){
+    qrActionMode = "CHECK_OUT";
+    qs("qrActionTitle").textContent = "QR check out";
+    qs("qrActionSub").textContent = "The booking has no check out time, so this scan will check the vehicle out using your phone date/time.";
+    qs("qrActionBtn").textContent = "Confirm check out";
+    qs("qrStartMileage").value = startMileage(activeBooking) || "";
+    show("qrCheckoutFields");
+    qs("qrActionModal").classList.add("open");
+    setTimeout(()=>qs("qrStartMileage").focus(), 100);
+    return;
+  }
+  if(canCheckIn(activeBooking)){
+    qrActionMode = "CHECK_IN";
+    qs("qrActionTitle").textContent = "QR check in";
+    qs("qrActionSub").textContent = "The booking already has a check out time, so this scan will check the vehicle back in using your phone date/time.";
+    qs("qrActionBtn").textContent = "Confirm check in";
+    qs("qrEndMileage").value = endMileage(activeBooking) || "";
+    show("qrCheckinFields");
+    qs("qrActionModal").classList.add("open");
+    setTimeout(()=>qs("qrEndMileage").focus(), 100);
+    return;
+  }
+  const msg = isCheckedIn(activeBooking) ? "This booking is already returned." : "This booking is not ready for check out/check in yet.";
+  setMsg("statusMsg", msg, isCheckedIn(activeBooking) ? "success" : "warning");
+}
+function closeQrAction(){ qs("qrActionModal").classList.remove("open"); qrActionMode = null; }
+function toggleQrDamageNotes(){ qs("qrDamageWrap").classList.toggle("hidden", !qs("qrDamageReported").checked); }
+async function submitQrAction(){
+  if(!activeBooking || !qrActionMode) return;
+  const deviceTimestamp = new Date().toISOString();
+  const id = bookingId(activeBooking);
+  setMsg("qrActionMsg", "");
+  setLoading("qrActionBtn", true, qrActionMode === "CHECK_OUT" ? "Checking out..." : "Checking in...", qrActionMode === "CHECK_OUT" ? "Confirm check out" : "Confirm check in");
+  try{
+    if(qrActionMode === "CHECK_OUT"){
+      const mileage = Number(qs("qrStartMileage").value);
+      if(!Number.isFinite(mileage) || mileage < 0) throw new Error("Please enter a valid start mileage number.");
+      const payload = {bookingId:id, startMileage:mileage, deviceTimestamp, actionSource:"QR", qrCode:lastScannedQr};
+      const res = await fetch(CHECK_OUT_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+      let result={}; try{result=await res.json();}catch(e){}
+      if(!res.ok) throw new Error(result.message || `Check Out returned ${res.status}`);
+      updateLocal(id, {StartMileage:mileage, MileageOut:mileage, CheckOutTime:deviceTimestamp, VehicleJourneyStatus:"Checked Out"});
+      closeQrAction();
+      setMsg("statusMsg", result.message || "QR check out complete.", "success");
+    }else{
+      const mileage = Number(qs("qrEndMileage").value);
+      const damage = qs("qrDamageReported").checked;
+      const damageNotes = qs("qrDamageNotes").value.trim();
+      if(!Number.isFinite(mileage) || mileage < 0) throw new Error("Please enter a valid end mileage number.");
+      if(damage && !damageNotes) throw new Error("Please enter damage notes when damage is reported.");
+      const payload = {
+        bookingId:id,
+        endMileage:mileage,
+        fuelFullCharged:qs("qrFuelFullCharged").checked,
+        vehicleClean:qs("qrVehicleClean").checked,
+        fuelCardReturned:qs("qrFuelCardReturned").checked,
+        damageReported:damage,
+        damageNotes:damageNotes,
+        returnNotes:qs("qrReturnNotes").value.trim(),
+        deviceTimestamp,
+        actionSource:"QR",
+        qrCode:lastScannedQr
+      };
+      const res = await fetch(CHECK_IN_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+      let result={}; try{result=await res.json();}catch(e){}
+      if(!res.ok) throw new Error(result.message || `Check In returned ${res.status}`);
+      updateLocal(id, {EndMileage:mileage, MileageIn:mileage, CheckInTime:deviceTimestamp, VehicleJourneyStatus:"Returned", DamageReported:damage, FuelFullCharged:payload.fuelFullCharged, VehicleClean:payload.vehicleClean, FuelCardReturned:payload.fuelCardReturned});
+      closeQrAction();
+      setMsg("statusMsg", result.message || "QR check in complete.", "success");
+    }
+  }catch(e){ console.error(e); setMsg("qrActionMsg", e.message || "QR action could not be completed.", "error"); }
+  finally{ setLoading("qrActionBtn", false, qrActionMode === "CHECK_OUT" ? "Checking out..." : "Checking in...", qrActionMode === "CHECK_OUT" ? "Confirm check out" : "Confirm check in"); }
+}
+
+window.addEventListener("load", async () => {
+  pendingQrAutoOpen = shouldAutoQrOpen();
+  const saved = currentEmail();
+  if(saved){ qs("loginEmail").value = saved; try{ await loadUserContext(); await startApp(); if(pendingQrAutoOpen){ setTimeout(()=>openQrSmartAction("link", "SS-FLEET-CHECKIN"), 350); } }catch(e){ console.error(e); setMsg("loginMsg", e.message || "Saved login could not be checked. Enter your email again.", "error"); show("loginCard"); } }
+  else { qs("loginEmail").focus(); }
+});
+document.addEventListener("keydown", e => { if(e.key === "Enter" && !qs("loginCard").classList.contains("hidden")) loginAndLoad(); });
+</script>
+</body>
+</html>
