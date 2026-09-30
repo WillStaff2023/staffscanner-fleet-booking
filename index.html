@@ -1124,6 +1124,31 @@
   </div>
 </div>
 
+
+<div class="wizard" id="addCalendarModal" aria-hidden="true">
+  <div class="modal" style="width:min(620px,100%);">
+    <div class="modal-head">
+      <div>
+        <h3>Add to your calendar?</h3>
+        <p style="margin:6px 0 0;color:var(--muted)">Keep this vehicle booking handy in Outlook, Apple Calendar or another calendar app.</p>
+      </div>
+      <button class="close" type="button" onclick="closeAddCalendarModal()" aria-label="Dismiss calendar prompt">×</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:linear-gradient(135deg,#f5fbff,#eef6ff);border:1px solid #d7e9f8;border-radius:20px;padding:18px;margin-bottom:18px;">
+      <div style="width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#0074d8,#0093e6);color:#fff;font-size:28px;box-shadow:0 12px 28px rgba(0,116,216,.22);">📅</div>
+      <div id="addCalendarSummary" style="min-width:0"></div>
+    </div>
+
+    <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.5;">Choosing <strong>Add to Calendar</strong> downloads a calendar file for this booking. You can dismiss this if you do not want to add it.</p>
+
+    <div class="modal-actions">
+      <button class="btn secondary" type="button" onclick="closeAddCalendarModal()">Not now</button>
+      <button class="btn calendar-action" type="button" id="confirmAddCalendarBtn" onclick="confirmAddBookingToCalendar()">📅 Add to Calendar</button>
+    </div>
+  </div>
+</div>
+
 <div class="wizard" id="calendarDetailModal">
   <div class="modal">
     <div class="modal-head">
@@ -2788,7 +2813,9 @@ function safeCalendarFileName(value){
   return `${cleaned || "fleet-booking"}.ics`;
 }
 
-function addBookingToCalendar(index){
+let addCalendarBookingIndex = -1;
+
+function openAddCalendarModal(index){
   const item = myBookingsCache[index];
   if(!item){
     showToast("This booking could not be found. Refresh My Bookings and try again.", "warning", "Add to calendar");
@@ -2797,11 +2824,55 @@ function addBookingToCalendar(index){
 
   const startValue = item.StartDate_x002f_Time || item.StartDateTime || item.Start || "";
   const endValue = item.EndDate_x002f_Time || item.EndDateTime || item.End || "";
+  if(!icsUtc(startValue) || !icsUtc(endValue) || new Date(endValue) <= new Date(startValue)){
+    showToast("This booking does not contain a valid start and end time.", "warning", "Add to calendar");
+    return;
+  }
+
+  addCalendarBookingIndex = index;
+  const vehicle = bookingVehicleName(item);
+  const ref = bookingReference(item);
+  const destination = item.Destination || "";
+  const start = formatDateTimeForDisplay(startValue);
+  const end = formatDateTimeForDisplay(endValue);
+  const summary = document.getElementById("addCalendarSummary");
+  if(summary){
+    summary.innerHTML = `
+      <strong style="display:block;font-size:17px;color:var(--text);margin-bottom:4px;">${escapeHtml(vehicle)}</strong>
+      <span style="display:block;color:var(--muted);font-size:13px;line-height:1.45;">${escapeHtml(ref)}</span>
+      <span style="display:block;color:var(--muted);font-size:13px;line-height:1.45;">${escapeHtml([start && end ? `${start} - ${end}` : start, destination].filter(Boolean).join(" · "))}</span>`;
+  }
+  const modal = document.getElementById("addCalendarModal");
+  if(modal){
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+    setTimeout(()=>document.getElementById("confirmAddCalendarBtn")?.focus(), 80);
+  }
+}
+
+function closeAddCalendarModal(){
+  const modal = document.getElementById("addCalendarModal");
+  if(modal){
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+  }
+  addCalendarBookingIndex = -1;
+}
+
+function downloadBookingCalendar(index){
+  const item = myBookingsCache[index];
+  if(!item){
+    showToast("This booking could not be found. Refresh My Bookings and try again.", "warning", "Add to calendar");
+    return false;
+  }
+
+  const startValue = item.StartDate_x002f_Time || item.StartDateTime || item.Start || "";
+  const endValue = item.EndDate_x002f_Time || item.EndDateTime || item.End || "";
   const dtStart = icsUtc(startValue);
   const dtEnd = icsUtc(endValue);
   if(!dtStart || !dtEnd || new Date(endValue) <= new Date(startValue)){
     showToast("This booking does not contain a valid start and end time.", "warning", "Add to calendar");
-    return;
+    return false;
   }
 
   const vehicle = bookingVehicleName(item);
@@ -2854,7 +2925,22 @@ function addBookingToCalendar(index){
   a.click();
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 1500);
-  showToast("Calendar file created. Open it to add this vehicle booking to your calendar.", "success", "Add to calendar");
+  showToast("Calendar file downloaded. Open it to add this vehicle booking to your calendar.", "success", "Add to calendar");
+  return true;
+}
+
+function addBookingToCalendar(index){
+  openAddCalendarModal(index);
+}
+
+function confirmAddBookingToCalendar(){
+  const index = addCalendarBookingIndex;
+  if(index < 0){
+    closeAddCalendarModal();
+    return;
+  }
+  const downloaded = downloadBookingCalendar(index);
+  if(downloaded) closeAddCalendarModal();
 }
 
 
