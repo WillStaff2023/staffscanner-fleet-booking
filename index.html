@@ -132,6 +132,8 @@
     .btn.danger{background:#fee2e2;color:#991b1b;box-shadow:none}
     .btn.calendar-action{background:linear-gradient(135deg,#173A5E,#0074d8);color:#fff;box-shadow:0 10px 22px rgba(0,116,216,.18);white-space:nowrap}
     .btn.calendar-action:hover{box-shadow:0 14px 28px rgba(0,116,216,.26)}
+    .btn.calendar-pending{background:#eef3f8;color:#68798c;border:1px dashed #c9d7e5;box-shadow:none;cursor:not-allowed;white-space:nowrap;opacity:1}
+    .btn.calendar-pending:disabled{background:#eef3f8!important;color:#68798c!important;border:1px dashed #c9d7e5;box-shadow:none!important;opacity:1}
     .btn.disabled,.btn:disabled{background:#e5e7eb!important;color:#667085!important;box-shadow:none!important;cursor:not-allowed;opacity:.8}
     .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
     .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-weight:900;color:var(--muted);cursor:pointer}
@@ -3175,9 +3177,12 @@ function renderMyBookings(bookings){
     const bookingId = Number(item.ID || item.Id || item.id || 0);
     const safeRef = jsString(ref);
     const viewButton = `<button class="btn secondary" style="margin-left:8px;" onclick='openMyBookingDetails(${originalIndex})'>View</button>`;
-    const addCalendarButton = (bookingState(item) === "approved" || bookingState(item) === "inuse") && originalIndex >= 0
+    const bookingCalendarState = bookingState(item);
+    const addCalendarButton = (bookingCalendarState === "approved" || bookingCalendarState === "inuse") && originalIndex >= 0
       ? `<button class="btn calendar-action" style="margin-left:8px;" onclick='addBookingToCalendar(${originalIndex})' title="Add this booking to Outlook, Apple Calendar or another calendar">📅 Add to Calendar</button>`
-      : "";
+      : bookingCalendarState === "pending"
+        ? `<button class="btn calendar-pending" style="margin-left:8px;" type="button" disabled title="Calendar download becomes available once this booking is approved">📅 Calendar pending approval</button>`
+        : "";
     const checkOutButton = canCheckOutBooking(item) && bookingId
       ? `<button class="btn secondary" style="margin-left:8px;" onclick='checkOutBooking(${bookingId}, ${safeRef})'>Check Out</button>`
       : "";
@@ -4211,12 +4216,22 @@ async function submitBooking(){
     try { result = await response.json(); } catch(e) {}
 
     showBookingStatus(result.message || "Booking submitted successfully. Approval workflow has started.", "success");
+    await wait(250);
     await loadMyBookings();
     await loadDashboardStats();
     await loadCalendarBookings();
     await loadVehicles();
     if(!document.getElementById("admin")?.classList.contains("hidden")) await loadAdminQueue();
-    setTimeout(closeWizard, 1800);
+
+    // After a successful booking, take the user straight to My Bookings so
+    // they can see the pending request. The calendar control stays visible
+    // but disabled until the booking is approved, when it automatically
+    // becomes the normal Add to Calendar button on refresh.
+    setMyBookingsFilter("pending");
+    closeWizard();
+    const myBookingsNav = document.querySelector('[data-view="mybookings"]');
+    if(myBookingsNav) myBookingsNav.click();
+    showToast("Booking submitted for approval. Add to Calendar will become available once it is approved.", "success", "Booking submitted");
   }catch(error){
     console.error(error);
     showBookingStatus("Booking could not be submitted. Check the Power Automate flow URL, availability flow, and permissions.", "error");
