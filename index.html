@@ -130,6 +130,8 @@
     }
     .btn.secondary{background:#f1f5f9;color:#213047;box-shadow:none}
     .btn.danger{background:#fee2e2;color:#991b1b;box-shadow:none}
+    .btn.calendar-action{background:linear-gradient(135deg,#173A5E,#0074d8);color:#fff;box-shadow:0 10px 22px rgba(0,116,216,.18);white-space:nowrap}
+    .btn.calendar-action:hover{box-shadow:0 14px 28px rgba(0,116,216,.26)}
     .btn.disabled,.btn:disabled{background:#e5e7eb!important;color:#667085!important;box-shadow:none!important;cursor:not-allowed;opacity:.8}
     .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
     .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-weight:900;color:var(--muted);cursor:pointer}
@@ -2763,6 +2765,98 @@ function jsString(value){
   return JSON.stringify(String(value || ""));
 }
 
+function icsEscape(value){
+  return String(value == null ? "" : value)
+    .replace(/\\/g,"\\\\")
+    .replace(/\r?\n/g,"\\n")
+    .replace(/,/g,"\\,")
+    .replace(/;/g,"\\;");
+}
+
+function icsUtc(value){
+  if(!value) return "";
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return "";
+  return d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+}
+
+function safeCalendarFileName(value){
+  const cleaned = String(value || "fleet-booking")
+    .replace(/[^a-z0-9-_]+/gi,"-")
+    .replace(/-+/g,"-")
+    .replace(/^-|-$/g,"");
+  return `${cleaned || "fleet-booking"}.ics`;
+}
+
+function addBookingToCalendar(index){
+  const item = myBookingsCache[index];
+  if(!item){
+    showToast("This booking could not be found. Refresh My Bookings and try again.", "warning", "Add to calendar");
+    return;
+  }
+
+  const startValue = item.StartDate_x002f_Time || item.StartDateTime || item.Start || "";
+  const endValue = item.EndDate_x002f_Time || item.EndDateTime || item.End || "";
+  const dtStart = icsUtc(startValue);
+  const dtEnd = icsUtc(endValue);
+  if(!dtStart || !dtEnd || new Date(endValue) <= new Date(startValue)){
+    showToast("This booking does not contain a valid start and end time.", "warning", "Add to calendar");
+    return;
+  }
+
+  const vehicle = bookingVehicleName(item);
+  const ref = bookingReference(item);
+  const driver = bookingDriverName(item);
+  const company = bookingCompany(item);
+  const destination = item.Destination || "";
+  const purpose = item.Purpose || "";
+  const notes = item.Notes || item.Comments || "";
+  const bookingId = Number(item.ID || item.Id || item.id || 0);
+  const portalUrl = /^https?:$/i.test(location.protocol) ? `${location.origin}${location.pathname}` : "";
+  const descriptionLines = [
+    `Booking reference: ${ref}`,
+    `Vehicle: ${vehicle}`,
+    driver ? `Driver: ${driver}` : "",
+    company ? `Company: ${company}` : "",
+    purpose ? `Purpose: ${purpose}` : "",
+    notes ? `Notes: ${notes}` : "",
+    portalUrl ? `Fleet Portal: ${portalUrl}` : ""
+  ].filter(Boolean);
+  const uid = `${bookingId || ref}-${new Date(startValue).getTime()}@staffscanner-fleet-booking`;
+  const nowStamp = icsUtc(new Date().toISOString());
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Staffscanner//Fleet Booking Portal//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${icsEscape(uid)}`,
+    `DTSTAMP:${nowStamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${icsEscape(`Staffscanner Fleet - ${vehicle}`)}`,
+    destination ? `LOCATION:${icsEscape(destination)}` : "",
+    `DESCRIPTION:${icsEscape(descriptionLines.join("\n"))}`,
+    "STATUS:CONFIRMED",
+    "TRANSP:OPAQUE",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].filter(Boolean);
+
+  const blob = new Blob([lines.join("\r\n") + "\r\n"], {type:"text/calendar;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = safeCalendarFileName(ref);
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  showToast("Calendar file created. Open it to add this vehicle booking to your calendar.", "success", "Add to calendar");
+}
+
 
 function isApprovedBooking(item){
   const status = bookingStatus(item).toLowerCase();
@@ -2995,6 +3089,9 @@ function renderMyBookings(bookings){
     const bookingId = Number(item.ID || item.Id || item.id || 0);
     const safeRef = jsString(ref);
     const viewButton = `<button class="btn secondary" style="margin-left:8px;" onclick='openMyBookingDetails(${originalIndex})'>View</button>`;
+    const addCalendarButton = (bookingState(item) === "approved" || bookingState(item) === "inuse") && originalIndex >= 0
+      ? `<button class="btn calendar-action" style="margin-left:8px;" onclick='addBookingToCalendar(${originalIndex})' title="Add this booking to Outlook, Apple Calendar or another calendar">📅 Add to Calendar</button>`
+      : "";
     const checkOutButton = canCheckOutBooking(item) && bookingId
       ? `<button class="btn secondary" style="margin-left:8px;" onclick='checkOutBooking(${bookingId}, ${safeRef})'>Check Out</button>`
       : "";
@@ -3007,7 +3104,7 @@ function renderMyBookings(bookings){
     const cancelButton = canCancelBooking(item) && bookingId
       ? `<button class="btn danger" style="margin-left:8px;" onclick='cancelBooking(${bookingId}, ${safeRef})'>Cancel Booking</button>`
       : "";
-    return `<div class="booking-row"><div><strong>${escapeHtml(vehicle)} · ${escapeHtml(ref)}</strong><span>${escapeHtml(subLine || "No date/details available")}</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><span class="badge ${badgeClass}">${escapeHtml(stateLabel)}</span>${viewButton}${checkOutButton}${checkInButton}${busJourneyButton}${cancelButton}</div></div>`;
+    return `<div class="booking-row"><div><strong>${escapeHtml(vehicle)} · ${escapeHtml(ref)}</strong><span>${escapeHtml(subLine || "No date/details available")}</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;"><span class="badge ${badgeClass}">${escapeHtml(stateLabel)}</span>${addCalendarButton}${viewButton}${checkOutButton}${checkInButton}${busJourneyButton}${cancelButton}</div></div>`;
   }).join("");
 }
 
